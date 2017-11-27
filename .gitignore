@@ -107,4 +107,4 @@ ENV/
 *.zip
 *.tgz
 *.lua
-
+*.swp
