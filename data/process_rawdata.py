@@ -4,6 +4,7 @@
 #   3. tokenize the question
 #   4. change the tokenized question into lower cases
 #   5. add another fields which indicates the token number of the question
+# 按照question长度从大到小排序后，写入QAData.*.pkl
 
 import multiprocessing as mp
 import sys, os, io, re

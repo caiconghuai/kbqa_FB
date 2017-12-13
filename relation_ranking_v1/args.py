@@ -29,7 +29,7 @@ def get_args():
     parser.add_argument('--vocab_file', type=str, default='../vocab/vocab.word.pt')
     parser.add_argument('--rel_vocab_file', type=str, default='../vocab/vocab.rel.pt')
     parser.add_argument('--word_vectors', type=str, default='../vocab/glove.42B.300d.txt')
-    parser.add_argument('--vector_cache', type=str, default=os.path.join(os.getcwd(), 'vector_cache/input_vectors.pt'))
+    parser.add_argument('--vector_cache', type=str, default=os.path.join(os.getcwd(), '../vector_cache/input_vectors.pt'))
     parser.add_argument('--word_normalize', action='store_true')
     parser.add_argument('--train_embed', action='store_false', dest='fix_emb') # fine-tune the word embeddings
     parser.add_argument('--resume_snapshot', type=str, default=None)
