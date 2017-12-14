@@ -12,8 +12,8 @@ import os, sys, glob
 import numpy as np
 
 from args import get_args
-from model import RelationRanking
-from seqRankingLoader import SeqRankingLoader
+from model_sep import RelationRanking  ###
+from seqRankingLoader import SeqRankingSepratedLoader as SeqRankingLoader ###
 
 # please set the configuration in the file : args.py
 args = get_args()
@@ -61,6 +61,7 @@ else:
         if os.path.isfile(args.vector_cache):
             pretrained = torch.load(args.vector_cache)
             model.word_embed.word_lookup_table.weight.data.copy_(pretrained)
+#            model.word_embed2.word_lookup_table.weight.data.copy_(pretrained) ###
         else:
             pretrained = model.word_embed.load_pretrained_vectors(args.word_vectors, binary=False,
                                             normalize=args.word_normalize)
@@ -107,8 +108,8 @@ for epoch in range(1, args.epochs+1):
         model.train();
         optimizer.zero_grad()
 
+        '''
         pos_score, neg_score = model(batch)
-
         n_correct += (torch.sum(torch.gt(pos_score, neg_score), 0).data == neg_score.size(0)).sum()
         n_total += pos_score.size(1)
         train_acc = 100. * n_correct / n_total
@@ -118,6 +119,25 @@ for epoch in range(1, args.epochs+1):
             ones = ones.cuda()
         loss = criterion(pos_score.contiguous().view(-1,1).squeeze(1), neg_score.contiguous().view(-1,1).squeeze(1), ones)
         loss.backward()
+
+        '''
+        score1, score2 = model(batch)
+        n_correct += (torch.sum(torch.gt(score1[0]+score2[0], score1[1]+score2[1]), 0).data
+                      == score1[1].size(0)).sum()
+        n_total += score1[0].size(1)
+        train_acc = 100. * n_correct / n_total
+        ones = torch.autograd.Variable(torch.ones(score1[0].size(0)*score1[0].size(1)))
+        if args.cuda:
+            ones = ones.cuda()
+        loss1 = criterion(score1[0].contiguous().view(-1,1).squeeze(1),
+                          score1[1].contiguous().view(-1,1).squeeze(1), ones)
+        loss1.backward(retain_graph=True)
+
+        loss2 = criterion(score2[0].contiguous().view(-1,1).squeeze(1),
+                          score2[1].contiguous().view(-1,1).squeeze(1), ones)
+        loss2.backward()
+
+        loss = loss1+loss2
 
         # clip the gradient
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip_gradient)
@@ -143,15 +163,15 @@ for epoch in range(1, args.epochs+1):
             pred_list = []
 
             for valid_batch_idx, valid_batch in enumerate(valid_loader.next_batch(False)):
-                valid_label = valid_batch[1]
+                '''
                 val_pos_score, val_neg_score = model(valid_batch)
                 n_dev_correct += (torch.sum(torch.gt(val_pos_score, val_neg_score), 0).data == val_neg_score.size(0)).sum()
                 valid_total += val_pos_score.size(1)
-#                index_tag = np.transpose(torch.max(answer, 1)[1].view(valid_label.size()).cpu().data.numpy())
-#                gold_list.append(np.transpose(valid_label.cpu().data.numpy()))
-#                pred_list.append(index_tag)
-#            P, R, F = evaluation(gold_list, pred_list)
-
+                '''
+                val_score1, val_score2 = model(valid_batch)
+                n_dev_correct += (torch.sum(torch.gt(val_score1[0]+val_score2[0],
+                                val_score1[1]+val_score2[1]), 0).data == val_score1[1].size(0)).sum()
+                valid_total += val_score1[0].size(1)
 
             dev_acc = 100. * n_dev_correct / valid_total
             print(dev_log_template.format(time.time() - start, epoch, iterations, 
