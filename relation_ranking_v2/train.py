@@ -108,8 +108,9 @@ for epoch in range(1, args.epochs+1):
         model.train();
         optimizer.zero_grad()
 
-        '''
-        pos_score, neg_score = model(batch)
+        pos_score1, pos_score2, neg_score1, neg_score2 = model(batch)
+        pos_score = pos_score1+pos_score2
+        neg_score = neg_score1+neg_score2
         n_correct += (torch.sum(torch.gt(pos_score, neg_score), 0).data == neg_score.size(0)).sum()
         n_total += pos_score.size(1)
         train_acc = 100. * n_correct / n_total
@@ -121,23 +122,25 @@ for epoch in range(1, args.epochs+1):
         loss.backward()
 
         '''
-        score1, score2 = model(batch)
-        n_correct += (torch.sum(torch.gt(score1[0]+score2[0], score1[1]+score2[1]), 0).data
-                      == score1[1].size(0)).sum()
-        n_total += score1[0].size(1)
+        pos_score1, pos_score2, neg_score1, neg_score2 = model(batch)
+        neg_size, batch_size = pos_score1.size()
+        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data
+                      == neg_size).sum()
+        n_total += batch_size
         train_acc = 100. * n_correct / n_total
-        ones = torch.autograd.Variable(torch.ones(score1[0].size(0)*score1[0].size(1)))
+        ones = torch.autograd.Variable(torch.ones(neg_size*batch_size))
         if args.cuda:
             ones = ones.cuda()
-        loss1 = criterion(score1[0].contiguous().view(-1,1).squeeze(1),
-                          score1[1].contiguous().view(-1,1).squeeze(1), ones)
+        loss1 = criterion(pos_score1.contiguous().view(-1,1).squeeze(1),
+                          neg_score1.contiguous().view(-1,1).squeeze(1), ones)
         loss1.backward(retain_graph=True)
 
-        loss2 = criterion(score2[0].contiguous().view(-1,1).squeeze(1),
-                          score2[1].contiguous().view(-1,1).squeeze(1), ones)
+        loss2 = criterion(pos_score2.contiguous().view(-1,1).squeeze(1),
+                          neg_score2.contiguous().view(-1,1).squeeze(1), ones)
         loss2.backward()
 
         loss = loss1+loss2
+        '''
 
         # clip the gradient
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip_gradient)
@@ -168,10 +171,10 @@ for epoch in range(1, args.epochs+1):
                 n_dev_correct += (torch.sum(torch.gt(val_pos_score, val_neg_score), 0).data == val_neg_score.size(0)).sum()
                 valid_total += val_pos_score.size(1)
                 '''
-                val_score1, val_score2 = model(valid_batch)
-                n_dev_correct += (torch.sum(torch.gt(val_score1[0]+val_score2[0],
-                                val_score1[1]+val_score2[1]), 0).data == val_score1[1].size(0)).sum()
-                valid_total += val_score1[0].size(1)
+                val_ps1, val_ps2, val_ns1, val_ns2 = model(valid_batch)
+                val_neg_size, val_batch_size = val_ps1.size()
+                n_dev_correct += (torch.sum(torch.gt(val_ps1+val_ps2, val_ns1+val_ns2), 0).data  == val_neg_size).sum()
+                valid_total += val_batch_size
 
             dev_acc = 100. * n_dev_correct / valid_total
             print(dev_log_template.format(time.time() - start, epoch, iterations, 
