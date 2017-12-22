@@ -12,7 +12,7 @@ import os, sys, glob
 import numpy as np
 
 from args import get_args
-from model_sep import RelationRanking  ###
+from model_att import RelationRanking  ###
 from seqRankingLoader import SeqRankingSepratedLoader as SeqRankingLoader ###
 
 # please set the configuration in the file : args.py
@@ -52,6 +52,8 @@ config.n_cells = config.n_layers
 if config.birnn:
     config.n_cells *= 2
 print(config)
+with open(os.path.join(config.save_path, 'param.log'), 'w') as f:
+    f.write(str(config))
 
 if args.resume_snapshot:
     model = torch.load(args.resume_snapshot, map_location=lambda storage, location: storage)
@@ -68,9 +70,9 @@ else:
             torch.save(pretrained, args.vector_cache)
             print('load pretrained word vectors from %s, pretrained size: %s' %(args.word_vectors,
                                                                                 pretrained.size()))
-    if args.cuda:
-        model.cuda()
-        print("Shift model to GPU")
+if args.cuda:
+    model.cuda()
+    print("Shift model to GPU")
 
 # show model parameters
 for name, param in model.named_parameters():
@@ -102,12 +104,15 @@ for epoch in range(1, args.epochs+1):
     n_correct, n_total = 0, 0
 
     for batch_idx, batch in enumerate(train_loader.next_batch()):
+#        print(batch_idx)
+#        if batch_idx > 3:break
         iterations += 1
         pos_rel = batch[1]
         neg_rel = batch[2]
         model.train();
         optimizer.zero_grad()
 
+        '''
         pos_score1, pos_score2, neg_score1, neg_score2 = model(batch)
         pos_score = pos_score1+pos_score2
         neg_score = neg_score1+neg_score2
@@ -140,7 +145,6 @@ for epoch in range(1, args.epochs+1):
         loss2.backward()
 
         loss = loss1+loss2
-        '''
 
         # clip the gradient
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip_gradient)
@@ -166,11 +170,6 @@ for epoch in range(1, args.epochs+1):
             pred_list = []
 
             for valid_batch_idx, valid_batch in enumerate(valid_loader.next_batch(False)):
-                '''
-                val_pos_score, val_neg_score = model(valid_batch)
-                n_dev_correct += (torch.sum(torch.gt(val_pos_score, val_neg_score), 0).data == val_neg_score.size(0)).sum()
-                valid_total += val_pos_score.size(1)
-                '''
                 val_ps1, val_ps2, val_ns1, val_ns2 = model(valid_batch)
                 val_neg_size, val_batch_size = val_ps1.size()
                 n_dev_correct += (torch.sum(torch.gt(val_ps1+val_ps2, val_ns1+val_ns2), 0).data  == val_neg_size).sum()
@@ -208,4 +207,5 @@ for epoch in range(1, args.epochs+1):
                                       loss.data[0], train_acc, ' '*12))
 #            print(model.rel_embed.word_lookup_table.weight.data)
 #            print(model.seq_encode)
+
 
