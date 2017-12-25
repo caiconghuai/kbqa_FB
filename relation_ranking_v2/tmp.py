@@ -16,7 +16,7 @@ print(neg_range)
 word_vocab = torch.load('../vocab/vocab.word.pt')
 word_vocab.add_start_token()
 
-loader = SeqRankingLoader('data/train.relation_ranking.separated.pt2', neg_range, 0)
+loader = SeqRankingLoader('data/train.relation_ranking.separated2.pt', neg_range, 0)
 batch_size = loader.batch_size
 for i, batch in enumerate(loader.next_batch(False)):
     if i>3:break
