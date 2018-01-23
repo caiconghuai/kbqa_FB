@@ -62,7 +62,7 @@ if __name__ == '__main__':
 #    tp = sys.argv[1]
     tp = 'valid'
     data_list = pickle.load(open('data/QAData.cand.%s.pkl' %tp, 'rb'))
-    rel_score_list = open('../relation_ranking_baseline/results/score-rel-%s.txt' %tp).readlines()
+    rel_score_list = open('../relation_ranking_v1/results/score-rel-%s.txt' %tp).readlines()
     sub_score_list = open('../subject_type/results/score-sub-%s.txt' %tp).readlines()
 
     corr_mat = np.zeros((2,2))
