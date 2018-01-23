@@ -1,7 +1,13 @@
 python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
-	--save_path saved_checkpoints/model-7 \
-	--train_file data/train.relation_ranking.separated.pt \
-	--valid_file data/valid.relation_ranking.separated.pt \
+	--save_path saved_checkpoints/model-20 \
+	--epochs 35 \
+	--train_file data/train.relation_ranking.separated2.pt \
+	--valid_file data/valid.relation_ranking.separated2.pt \
 	--loss_margin 1 \
 	--dev_every 600 \
-	--rnn_type lstm
+	--d_rel_embed 128 \
+    	--d_hidden 128 \
+	--n_layers 2 \
+	--gpu 6 \
+	--rnn_type gru  
+	--resume_snapshot saved_checkpoints/model-16/best_snapshot_iter_28800_devf1_90.45138888888889_model.pt

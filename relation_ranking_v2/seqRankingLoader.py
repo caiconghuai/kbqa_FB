@@ -62,11 +62,13 @@ def create_seq_ranking_data_separated(batch_size, batch_data, rel_vocab, rel_sep
     pos_rel2 = []
     neg_rel1 = []
     neg_rel2 = []
+    seqs = []
+    seq_len = []
     batch_index = 0    # the index of sequence batches
     pad_index = rel_vocab.lookup(rel_vocab.pad_token)
 
-    seqs, p, n, neg_rel_size = torch.load(batch_data)
-    for pos_rel, neg_rel_array, _neg_size in zip(p, n, neg_rel_size):
+    s, p, n, neg_rel_size = torch.load(batch_data)
+    for seq, pos_rel, neg_rel_array, _neg_size in zip(s, p, n, neg_rel_size):
         print('batch: %d' %batch_index)
         _pos_rel1 = torch.LongTensor(batch_size).fill_(pad_index)
         _pos_rel2 = torch.LongTensor(batch_size).fill_(pad_index)
@@ -78,8 +80,17 @@ def create_seq_ranking_data_separated(batch_size, batch_data, rel_vocab, rel_sep
         _neg_rel2 = torch.LongTensor(neg_size, batch_size)
         _neg_rel2.random_(0, len(rel_sep_vocab[1]))
 
+        _seq = torch.transpose(seq, 0, 1)
+        _seq_len = torch.LongTensor(batch_size).fill_(1)
+
         for i, pos in enumerate(pos_rel):
-            if pos == rel_vocab.pad_token:continue 
+            if pos == rel_vocab.pad_token:continue
+
+            _seq_len[i] = len(_seq[i])
+            for w in _seq[i]:
+                if w == pad_index:
+                    _seq_len[i] -= 1
+
             _pos = pos.split('.')
             p_rel1 = '.'.join(_pos[:-1])
             p_rel2 = _pos[-1]
@@ -101,19 +112,23 @@ def create_seq_ranking_data_separated(batch_size, batch_data, rel_vocab, rel_sep
         pos_rel2.append(_pos_rel2)
         neg_rel1.append(_neg_rel1)
         neg_rel2.append(_neg_rel2)
+        seqs.append(_seq)
+        seq_len.append(_seq_len)
         batch_index += 1
 
-    torch.save((seqs, pos_rel1, pos_rel2, neg_rel1, neg_rel2), '%s.relation_ranking.separated.pt' %file_type)
+    torch.save((seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2),
+               '%s.relation_ranking.separated2.pt' %file_type)
 
 class SeqRankingSepratedLoader():
     def __init__(self, infile, neg_range, device=-1):
-        self.seqs, self.pos_rel1, self.pos_rel2, self.neg_rel1, self.neg_rel2 = torch.load(infile)
-        self.batch_size = self.seqs[0].size(1)
+        self.seqs, self.seq_len, self.pos_rel1, self.pos_rel2, self.neg_rel1, self.neg_rel2 = torch.load(infile)
+        self.batch_size = self.seqs[0].size(0)
         self.batch_num = len(self.seqs)
 
         if device >=0:
             for i in range(self.batch_num):
                 self.seqs[i] = self.seqs[i].cuda(device)
+                self.seq_len[i] = self.seq_len[i].cuda(device)
                 self.pos_rel1[i] = self.pos_rel1[i].cuda(device)
                 self.pos_rel2[i] = self.pos_rel2[i].cuda(device)
                 self.neg_rel1[i] = self.neg_rel1[i].cuda(device)
@@ -125,7 +140,7 @@ class SeqRankingSepratedLoader():
         else:
             indices = range(self.batch_num)
         for i in indices:
-            yield Variable(self.seqs[i]), Variable(self.pos_rel1[i]), Variable(self.pos_rel2[i]), Variable(self.neg_rel1[i]), Variable(self.neg_rel2[i])
+            yield Variable(self.seqs[i]), Variable(self.seq_len[i]), Variable(self.pos_rel1[i]), Variable(self.pos_rel2[i]), Variable(self.neg_rel1[i]), Variable(self.neg_rel2[i])
 
 class SeqRankingLoader():
     def __init__(self, infile, neg_range, device=-1):
@@ -163,44 +178,52 @@ class SeqRankingLoader():
             yield Variable(self.seqs[i]), Variable(self.pos_rel[i]), Variable(neg_rel)
 
 class CandidateRankingLoader():
-    def __init__(self, qa_data_file, word_vocab, rel_vocab, device=-1):
-        self.qa_data = pickle.load(open(qa_data_file, 'rb'))
-        self.batch_num = len(self.qa_data)
+    def __init__(self, qa_pattern_file, word_vocab, rel_vocab, device=-1):
+        self.qa_pattern = pickle.load(open(qa_pattern_file, 'rb'))
+        self.batch_num = len(self.qa_pattern)
         self.word_vocab = word_vocab
         self.rel_vocab = rel_vocab
         self.pad_index = word_vocab.lookup(word_vocab.pad_token)
         self.device = device
 
     def next_question(self):
-        for data in self.qa_data:
-            tokens = data.question.split()
-            '''
-            if len(tokens) <= 1:    # filter out any question that has only one word
-                self.batch_num -= 1
-                continue
-            '''
+        for data in self.qa_pattern:
             if not hasattr(data, 'cand_rel'):
                 self.batch_num -= 1
                 continue
 #            print(data.subject, len(can_rels))
 
-            seqs = torch.LongTensor(self.word_vocab.convert_to_index(tokens)).unsqueeze(1)
-            pos_rel = torch.LongTensor([self.rel_vocab.lookup(data.relation)])
-            neg_rel = torch.LongTensor(self.rel_vocab.convert_to_index(data.cand_rel)).unsqueeze(1)
+            tokens = data.question.split()
+            seqs = torch.LongTensor(self.word_vocab.convert_to_index(tokens)).unsqueeze(0)
+            seq_len = torch.LongTensor([len(tokens)])
+
+            p_rel = data.relation.split('.')
+            p_rel1 = '.'.join(p_rel[:-1])
+            p_rel2 = p_rel[-1]
+            pos_rel1 = torch.LongTensor([self.rel_vocab[0].lookup(p_rel1)])
+            pos_rel2 = torch.LongTensor([self.rel_vocab[1].lookup(p_rel2)])
+
+            n_rel = data.cand_rel
+            n_rel1, n_rel2 = [], []
+            for r in n_rel:
+                r = r.split('.')
+                n_rel1.append('.'.join(r[:-1]))
+                n_rel2.append(r[-1])
+            neg_rel1 = torch.LongTensor(self.rel_vocab[0].convert_to_index(n_rel1)).unsqueeze(1)
+            neg_rel2 = torch.LongTensor(self.rel_vocab[1].convert_to_index(n_rel2)).unsqueeze(1)
             if self.device>=0:
-                seqs, pos_rel, neg_rel = seqs.cuda(self.device), pos_rel.cuda(self.device), neg_rel.cuda(self.device)
-            yield Variable(seqs), Variable(pos_rel), Variable(neg_rel), data
+                seqs, pos_rel1, pos_rel2, neg_rel1, neg_rel2 = seqs.cuda(self.device), pos_rel1.cuda(self.device), pos_rel2.cuda(self.device), neg_rel1.cuda(self.device), neg_rel2.cuda(self.device)
+            yield Variable(seqs), Variable(seq_len), Variable(pos_rel1), Variable(pos_rel2), Variable(neg_rel1), Variable(neg_rel2), data
 
 if __name__ == '__main__':
-    '''
     word_vocab = torch.load('../vocab/vocab.word.pt')
     rel_vocab = torch.load('../vocab/vocab.rel.pt')
     word_vocab.add_start_token()
+    '''
     create_seq_ranking_data(64, '../data/QAData.pattern.valid.pkl', word_vocab, rel_vocab)
     create_seq_ranking_data(64, '../data/QAData.pattern.test.pkl', word_vocab, rel_vocab)
     create_seq_ranking_data(64, '../data/QAData.pattern.train.pkl', word_vocab, rel_vocab)
     '''
-    rel_vocab = torch.load('../vocab/vocab.rel.pt')
     rel_sep_vocab = torch.load('../vocab/vocab.rel.sep.pt')
     create_seq_ranking_data_separated(64, 'data/valid.relation_ranking.pt', rel_vocab, rel_sep_vocab)
     create_seq_ranking_data_separated(64, 'data/test.relation_ranking.pt', rel_vocab, rel_sep_vocab)

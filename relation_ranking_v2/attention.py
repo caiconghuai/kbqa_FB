@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-#from mask_util import lengths2mask
+from mask_util import lengths2mask
 
 
 class WordSeqAttentionModel(nn.Module):
@@ -43,7 +43,6 @@ class WordSeqAttentionModel(nn.Module):
 
         score = self._score(x, seq)
 
-        '''
         if lengths is not None:
             mask = lengths2mask(lengths, max_len, byte=True)
             mask = 1 + mask * -1
@@ -51,7 +50,6 @@ class WordSeqAttentionModel(nn.Module):
                 score = score.data.masked_fill_(mask.data, float("-inf"))
             else:
                 score = score.masked_fill_(mask, float("-inf"))
-        '''
 
         weight = F.softmax(score)
         return weight

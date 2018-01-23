@@ -3,7 +3,7 @@
  
 # Author: QuYingqi
 # mail: cookiequ17@hotmail.com
-# Created Time: 2017-11-09
+# Created Time: 2017-12-13
 
 from torch import nn
 from torch import autograd
@@ -20,7 +20,7 @@ class RelationRanking(nn.Module):
         self.config = config
         rel1_vocab, rel2_vocab = rel_vocab
         self.word_embed = Embeddings(word_vec_size=config.d_word_embed, dicts=word_vocab)
-#        self.word_embed2 = Embeddings(word_vec_size=config.d_word_embed, dicts=word_vocab)
+        self.word_embed2 = Embeddings(word_vec_size=config.d_word_embed, dicts=word_vocab)
         self.rel1_embed = Embeddings(word_vec_size=config.d_rel_embed, dicts=rel1_vocab)
         self.rel2_embed = Embeddings(word_vec_size=config.d_rel_embed, dicts=rel2_vocab)
 #        print(self.rel_embed.word_lookup_table.weight.data)
@@ -29,11 +29,13 @@ class RelationRanking(nn.Module):
         if self.config.rnn_type.lower() == 'gru':
             self.rnn = nn.GRU(input_size=config.d_word_embed, hidden_size=config.d_hidden,
                               num_layers=config.n_layers, dropout=config.dropout_prob,
-                              bidirectional=config.birnn)
+                              bidirectional=config.birnn,
+                              batch_first=True)
         else:
             self.rnn = nn.LSTM(input_size=config.d_word_embed, hidden_size=config.d_hidden,
                                num_layers=config.n_layers, dropout=config.dropout_prob,
-                               bidirectional=config.birnn)
+                               bidirectional=config.birnn,
+                               batch_first=True)
 
         self.dropout = nn.Dropout(p=config.dropout_prob)
         seq_in_size = config.d_hidden
@@ -62,7 +64,7 @@ class RelationRanking(nn.Module):
         return pos_score, neg_score
 
     def question_encoder(self, inputs):
-        batch_size = inputs.size()[1]
+        batch_size = inputs.size(0)
         state_shape = self.config.n_cells, batch_size, self.config.d_hidden
         if self.config.rnn_type.lower() == 'gru':
             h0 = autograd.Variable(inputs.data.new(*state_shape).zero_())
@@ -79,19 +81,24 @@ class RelationRanking(nn.Module):
 
     def forward(self, batch):
         # shape of batch (sequence length, batch size)
-        seqs, pos_rel1, pos_rel2, neg_rel1, neg_rel2 = batch
-        inputs = self.word_embed.forward(seqs) # shape (sequence length, batch_size, dimension of embedding)
-#        inputs2 = self.word_embed2.forward(seqs) # shape (sequence length, batch_size, dimension of embedding)
-        pos_rel1_embed = self.rel1_embed.word_lookup_table(pos_rel1) # shape(batch_size, dimension of rel embedding)
-        pos_rel2_embed = self.rel2_embed.word_lookup_table(pos_rel2) # shape(batch_size, dimension of rel embedding)
-#        pos_rel_embed = self.dropout(pos_rel_embed)
-        neg_rel1_embed = self.rel1_embed.word_lookup_table(neg_rel1) # shape(neg_size, batch_size, dimension of rel embedding)
-        neg_rel2_embed = self.rel2_embed.word_lookup_table(neg_rel2) # shape(neg_size, batch_size, dimension of rel embedding)
-#        neg_rel_embed = self.dropout(neg_rel_embed)
-        
+        seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2 = batch
+        # shape (sequence length, batch_size, dimension of embedding)
+        inputs = self.word_embed.forward(seqs)
+        inputs2 = self.word_embed2.forward(seqs)
+        # shape(batch_size, dimension of rel embedding)
+        pos_rel1_embed = self.rel1_embed.word_lookup_table(pos_rel1)
+        pos_rel2_embed = self.rel2_embed.word_lookup_table(pos_rel2)
+        pos_rel1_embed = self.dropout(pos_rel1_embed)
+        pos_rel2_embed = self.dropout(pos_rel2_embed)
+        # shape(neg_size, batch_size, dimension of rel embedding)
+        neg_rel1_embed = self.rel1_embed.word_lookup_table(neg_rel1)
+        neg_rel2_embed = self.rel2_embed.word_lookup_table(neg_rel2)
+        neg_rel1_embed = self.dropout(neg_rel1_embed)
+        neg_rel2_embed = self.dropout(neg_rel2_embed)
+
         seq_encode = self.question_encoder(inputs)
-#        seq_encode2 = self.question_encoder(inputs2)
+        seq_encode2 = self.question_encoder(inputs2)
         # shape of `scores` - (neg_size, batch_size)
-        scores1 = self.match_score(seq_encode, pos_rel1_embed, neg_rel1_embed)
-        scores2 = self.match_score(seq_encode, pos_rel2_embed, neg_rel2_embed)
-        return scores1, scores2
+        pos_scores1, neg_score1 = self.match_score(seq_encode, pos_rel1_embed, neg_rel1_embed)
+        pos_scores2, neg_score2 = self.match_score(seq_encode2, pos_rel2_embed, neg_rel2_embed)
+        return pos_scores1, pos_scores2, neg_score1, neg_score2
