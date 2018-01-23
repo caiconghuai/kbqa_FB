@@ -178,33 +178,42 @@ class SeqRankingLoader():
             yield Variable(self.seqs[i]), Variable(self.pos_rel[i]), Variable(neg_rel)
 
 class CandidateRankingLoader():
-    def __init__(self, qa_data_file, word_vocab, rel_vocab, device=-1):
-        self.qa_data = pickle.load(open(qa_data_file, 'rb'))
-        self.batch_num = len(self.qa_data)
+    def __init__(self, qa_pattern_file, word_vocab, rel_vocab, device=-1):
+        self.qa_pattern = pickle.load(open(qa_pattern_file, 'rb'))
+        self.batch_num = len(self.qa_pattern)
         self.word_vocab = word_vocab
         self.rel_vocab = rel_vocab
         self.pad_index = word_vocab.lookup(word_vocab.pad_token)
         self.device = device
 
     def next_question(self):
-        for data in self.qa_data:
-            tokens = data.question.split()
-            '''
-            if len(tokens) <= 1:    # filter out any question that has only one word
-                self.batch_num -= 1
-                continue
-            '''
+        for data in self.qa_pattern:
             if not hasattr(data, 'cand_rel'):
                 self.batch_num -= 1
                 continue
 #            print(data.subject, len(can_rels))
 
-            seqs = torch.LongTensor(self.word_vocab.convert_to_index(tokens)).unsqueeze(1)
-            pos_rel = torch.LongTensor([self.rel_vocab.lookup(data.relation)])
-            neg_rel = torch.LongTensor(self.rel_vocab.convert_to_index(data.cand_rel)).unsqueeze(1)
+            tokens = data.question.split()
+            seqs = torch.LongTensor(self.word_vocab.convert_to_index(tokens)).unsqueeze(0)
+            seq_len = torch.LongTensor([len(tokens)])
+
+            p_rel = data.relation.split('.')
+            p_rel1 = '.'.join(p_rel[:-1])
+            p_rel2 = p_rel[-1]
+            pos_rel1 = torch.LongTensor([self.rel_vocab[0].lookup(p_rel1)])
+            pos_rel2 = torch.LongTensor([self.rel_vocab[1].lookup(p_rel2)])
+
+            n_rel = data.cand_rel
+            n_rel1, n_rel2 = [], []
+            for r in n_rel:
+                r = r.split('.')
+                n_rel1.append('.'.join(r[:-1]))
+                n_rel2.append(r[-1])
+            neg_rel1 = torch.LongTensor(self.rel_vocab[0].convert_to_index(n_rel1)).unsqueeze(1)
+            neg_rel2 = torch.LongTensor(self.rel_vocab[1].convert_to_index(n_rel2)).unsqueeze(1)
             if self.device>=0:
-                seqs, pos_rel, neg_rel = seqs.cuda(self.device), pos_rel.cuda(self.device), neg_rel.cuda(self.device)
-            yield Variable(seqs), Variable(pos_rel), Variable(neg_rel), data
+                seqs, pos_rel1, pos_rel2, neg_rel1, neg_rel2 = seqs.cuda(self.device), pos_rel1.cuda(self.device), pos_rel2.cuda(self.device), neg_rel1.cuda(self.device), neg_rel2.cuda(self.device)
+            yield Variable(seqs), Variable(seq_len), Variable(pos_rel1), Variable(pos_rel2), Variable(neg_rel1), Variable(neg_rel2), data
 
 if __name__ == '__main__':
     word_vocab = torch.load('../vocab/vocab.word.pt')

@@ -16,8 +16,11 @@ def remove_sub_text_question(qa_data, word_vocab):
     file_type = qa_data.split('.')[-2]
     data_list = pickle.load(open(qa_data, 'rb'))
     new_data_list = []
+    cnt = 0
     for data in data_list:
+        cnt += 1
         if not data.text_attention_indices:
+            print(data.question)
             continue
         tokens = data.question.split()
         # 把sub_text替换成一个特殊字符
@@ -28,14 +31,16 @@ def remove_sub_text_question(qa_data, word_vocab):
         data.question = ' '.join(tokens)
         new_data_list.append((data, len(tokens)))
 
+    print(cnt)
     _data_list = [data[0] for data in sorted(new_data_list, key = lambda data: data[1],
                                              reverse=True)]
-    pickle.dump(_data_list, open('QAData.pattern.%s.pkl' %file_type, 'wb'))
+    pickle.dump(_data_list, open('QAData.label.pattern.%s.pkl' %file_type, 'wb'))
 
 if __name__ == '__main__':
     word_vocab = torch.load('../vocab/vocab.word.pt')
     word_vocab.add_start_token()
-    remove_sub_text_question('QAData.valid.pkl', word_vocab)
-    remove_sub_text_question('QAData.test.pkl', word_vocab)
-    remove_sub_text_question('QAData.train.pkl', word_vocab)
+    qa_data_file = '../entity_detection/results-2/QAData.label.'
+    remove_sub_text_question(qa_data_file+'valid.pkl', word_vocab)
+    remove_sub_text_question(qa_data_file+'test.pkl', word_vocab)
+    remove_sub_text_question(qa_data_file+'train.pkl', word_vocab)
 
