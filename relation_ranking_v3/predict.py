@@ -30,7 +30,6 @@ if not args.trained_model:
 
 # load word vocab for questions, relation vocab for relations
 word_vocab = torch.load(args.vocab_file)
-word_vocab.add_start_token() # 加了替换sub_text的分隔符
 print('load word vocab, size: %s' % len(word_vocab))
 
 os.makedirs(args.results_path, exist_ok=True)
@@ -95,20 +94,20 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
 #        results_file = open(os.path.join(args.results_path, '%s-rel_wrong.txt' %tp), 'w')
         results_all_file = open(os.path.join(args.results_path, '%s-results-all.txt' %tp), 'w')
     if write_score:
-        score_file = open(os.path.join(args.results_path, 'score-rel-%s.txt' %tp), 'w')
+        score_file = open(os.path.join(args.results_path, 'score-rel-%s.pkl' %tp), 'wb')
     pred_rel_file = open(os.path.join(args.results_path, '%s-rel_results.txt' %tp), 'w')
 
     model.eval()
     total = 0
     n_rel_correct = 0
+    rel_scores = []
     for data_batch in data_loader.next_question():
-#        if total > 1:break
+        if total > 1:break
         data = data_batch[-1]
         if data.subject not in data.cand_sub: # cand_sub错的就不用管了
             continue
         total += 1
 
-        '''
         seqs, seq_len, pos_rel, pos_len, neg_rel, neg_len, data = data_batch
         seqs_trans = seqs.cpu().data.numpy()
         pos_rel_trans = pos_rel.cpu().data.numpy()
@@ -116,13 +115,13 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
         print(question)
         pos_rel_ = word_vocab.convert_to_word(pos_rel_trans[0])
         print(pos_rel_)
-        '''
 
         pos_score, neg_score = model(data_batch[:-1])
         neg_score = neg_score.data.squeeze().cpu().numpy()
 
         if write_score:
-            score_file.write('%s\n' %(' '.join(neg_score.astype('str'))))
+            rel_scores.append((data.cand_rel, data.relation, neg_score))
+#            score_file.write('%s\n' %(' '.join(neg_score.astype('str'))))
 
         pred_rel, pred_rel_scores, pred_sub = rel_pruned(neg_score, data)
 
@@ -137,6 +136,9 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
             results_all_file.write('%s\t%s\t%s\n' %(data.subject, pred_sub[:3], data.subject in
                                                     pred_sub))
             results_all_file.write('%s\t%s\n' %(data.relation, pred_rel_scores[:3]))
+
+    if write_score:
+        pickle.dump(rel_scores, score_file)
 
     rel_acc = 100. * n_rel_correct / total
     print("%s\taccuracy: %8.6f\tcorrect: %d\ttotal: %d" %(tp, rel_acc, n_rel_correct, total))

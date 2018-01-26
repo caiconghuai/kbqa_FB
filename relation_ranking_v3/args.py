@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--gpu', type=int, default=0, help='GPU device to use') # use -1 for CPU
     parser.add_argument('--seed', type=int, default=1111, help='random seed for reproducing results')
     parser.add_argument('--save_path', type=str, default='saved_checkpoints')
-    parser.add_argument('--vocab_file', type=str, default='../vocab/vocab.word.pt')
+    parser.add_argument('--vocab_file', type=str, default='../vocab/vocab.word&rel.pt')
     parser.add_argument('--rel_vocab_file', type=str, default='../vocab/vocab.rel.pt')
     parser.add_argument('--word_vectors', type=str, default='../vocab/glove.42B.300d.txt')
     parser.add_argument('--vector_cache', type=str, default=os.path.join(os.getcwd(), '../vector_cache/input_vectors_2.pt'))

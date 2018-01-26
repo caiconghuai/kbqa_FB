@@ -30,7 +30,6 @@ if torch.cuda.is_available() and not args.cuda:
 
 # load word vocab for questions, relation vocab for relations
 word_vocab = torch.load(args.vocab_file)
-word_vocab.add_start_token() # 加了替换sub_text的分隔符
 print('load word vocab, size: %s' % len(word_vocab))
 
 # load data

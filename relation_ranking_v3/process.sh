@@ -1,15 +1,16 @@
 python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
-	--save_path saved_checkpoints/model-7 \
+	--save_path saved_checkpoints/model-8 \
 	--epochs 35 \
 	--train_file data/train.relation_ranking.word.pt \
 	--valid_file data/valid.relation_ranking.word.pt \
+	--vector_cache ../vector_cache/input_vectors_3.pt \
 	--loss_margin 0.1 \
 	--dev_every 600 \
 	--seq_maxlen 21 \
 	--rel_maxlen 17 \
 	--channel_size 8 \
-	--conv_kernel_1 2 \
-	--conv_kernel_2 9 \
-	--pool_kernel_1 7 \
-	--pool_kernel_2 5 \
+	--conv_kernel_1 3 \
+	--conv_kernel_2 3 \
+	--pool_kernel_1 3 \
+	--pool_kernel_2 3 \
 	--gpu 4 

@@ -37,7 +37,8 @@ def create_seq_ranking_data_word(batch_size, batch_data, rel_vocab, word_vocab):
         print('batch: %d' %batch_index)
 
         pos_rel = torch.LongTensor(batch_size, rel_max_len).fill_(pad_index)
-        pos = rel_vocab.convert_to_word(pos.numpy())
+        pos_id = pos.numpy()
+        pos = rel_vocab.convert_to_word(pos_id)
         pos_len = torch.Tensor(batch_size).fill_(1)
 
         neg_size = max(n_size)
@@ -59,25 +60,26 @@ def create_seq_ranking_data_word(batch_size, batch_data, rel_vocab, word_vocab):
             p = pos[idx][3:].split('.')
             for i in p:
                 pos_words.extend(i.split('_'))
-#            pos_words = set(pos_words)
             if len(pos_words)>rel_max_len:
                 print(len(pos_words))
             pos_rel[idx, 0:len(pos_words)] = torch.LongTensor(word_vocab.convert_to_index(pos_words))
             pos_len[idx] = len(pos_words)
 
             can_rels = neg_array[idx]
+            if pos_id[idx] in can_rels:
+                can_rels.remove(pos_id[idx])
             can_len = len(can_rels)
             for i in range(neg_size-can_len):
-                can_rels.append(random.randint(0, len(rel_vocab)-1))
+                tmp = random.randint(2, len(rel_vocab)-1)
+                while(tmp == pos_id[idx]):
+                    tmp = random.randint(2, len(rel_vocab)-1)
+                can_rels.append(tmp)
             can_rels = rel_vocab.convert_to_word(can_rels)
             for j, neg in enumerate(can_rels):
-                if neg == pos[idx]:continue
-                if neg == rel_vocab.unk_token:continue #从处理的pt转回来时有些是unk。。待改
                 neg_words = []
                 neg = neg[3:].split('.')
                 for i in neg:
                     neg_words.extend(i.split('_'))
-#                neg_words = set(neg_words)
                 if len(neg_words)>rel_max_len:
                     print(len(neg_words))
                 neg_rel[j, idx, 0:len(neg_words)] = torch.LongTensor(word_vocab.convert_to_index(neg_words))
@@ -162,9 +164,8 @@ class CandidateRankingLoader():
 
 
 if __name__ == '__main__':
-    word_vocab = torch.load('../vocab/vocab.word.pt')
-    rel_vocab = torch.load('../vocab/vocab.rel.pt')
-    word_vocab.add_start_token()
+    word_vocab = torch.load(args.vocab_file)
+    rel_vocab = torch.load(args.rel_vocab_file)
     create_seq_ranking_data_word(64, 'data/valid.relation_ranking.pt', rel_vocab, word_vocab)
     create_seq_ranking_data_word(64, 'data/test.relation_ranking.pt', rel_vocab, word_vocab)
     create_seq_ranking_data_word(64, 'data/train.relation_ranking.pt', rel_vocab, word_vocab)

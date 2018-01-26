@@ -9,15 +9,15 @@ import torch
 from seqRankingLoader import *
 import numpy as np
 sys.path.append('../vocab')
+from args import get_args
 
-rel_vocab = torch.load('../vocab/vocab.rel.sep.pt')
-word_vocab = torch.load('../vocab/vocab.word.pt')
-word_vocab.add_start_token()
+args = get_args()
+word_vocab = torch.load(args.vocab_file)
 
 loader = SeqRankingLoader('data/train.relation_ranking.word.pt', 0)
 batch_size = loader.batch_size
 for i, batch in enumerate(loader.next_batch(False)):
-    if i>1:break
+    if i>=1:break
     print(i)
     seqs, seq_len, pos_rel, pos_len, neg_rel, neg_len = batch
     print(seqs.size())
@@ -32,7 +32,8 @@ for i, batch in enumerate(loader.next_batch(False)):
         print(question)
         pos_rel_ = word_vocab.convert_to_word(pos_rel_trans[j])
         print(pos_rel_)
-        print(neg_len_trans[:, j])
+#        print(neg_len_trans[:, j])
+        print(len(neg_rel_trans))
         for k in range(5):
             neg_rel_ = word_vocab.convert_to_word(neg_rel_trans[k][j])
             print(neg_rel_)
@@ -51,6 +52,6 @@ for i, batch in enumerate(loader.next_question()):
     print(pos_rel_)
     neg_rel_ = word_vocab.convert_to_word(neg_rel_trans[0])
     print(neg_rel_)
-
 '''
+
 
