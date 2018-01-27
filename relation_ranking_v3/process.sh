@@ -1,5 +1,5 @@
 python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
-	--save_path saved_checkpoints/model-8 \
+	--save_path saved_checkpoints/model-9 \
 	--epochs 35 \
 	--train_file data/train.relation_ranking.word.pt \
 	--valid_file data/valid.relation_ranking.word.pt \
@@ -11,6 +11,6 @@ python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
 	--channel_size 8 \
 	--conv_kernel_1 3 \
 	--conv_kernel_2 3 \
-	--pool_kernel_1 3 \
-	--pool_kernel_2 3 \
+	--pool_kernel_1 1 \
+	--pool_kernel_2 17 \
 	--gpu 4 

@@ -102,12 +102,13 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
     n_rel_correct = 0
     rel_scores = []
     for data_batch in data_loader.next_question():
-        if total > 1:break
+#        if total > 1:break
         data = data_batch[-1]
         if data.subject not in data.cand_sub: # cand_sub错的就不用管了
             continue
         total += 1
 
+        '''
         seqs, seq_len, pos_rel, pos_len, neg_rel, neg_len, data = data_batch
         seqs_trans = seqs.cpu().data.numpy()
         pos_rel_trans = pos_rel.cpu().data.numpy()
@@ -115,6 +116,7 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
         print(question)
         pos_rel_ = word_vocab.convert_to_word(pos_rel_trans[0])
         print(pos_rel_)
+        '''
 
         pos_score, neg_score = model(data_batch[:-1])
         neg_score = neg_score.data.squeeze().cpu().numpy()
