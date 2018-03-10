@@ -9,8 +9,8 @@ python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
 	--seq_maxlen 21 \
 	--rel_maxlen 17 \
 	--channel_size 8 \
-	--conv_kernel_1 2 \
-	--conv_kernel_2 2 \
-	--pool_kernel_1 3 \
-	--pool_kernel_2 3 \
+	--conv_kernel_1 3 \
+	--conv_kernel_2 3 \
+	--pool_kernel_1 1 \
+	--pool_kernel_2 17 \
 	--gpu 4 

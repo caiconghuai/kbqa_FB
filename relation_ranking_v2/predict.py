@@ -102,11 +102,12 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
         results_file = open(os.path.join(args.results_path, '%s-pred_rel-wrong.txt' %tp), 'w')
         results_all_file = open(os.path.join(args.results_path, '%s-results-all.txt' %tp), 'w')
     if write_score:
-        score_file = open(os.path.join(args.results_path, 'score-rel-%s.txt' %tp), 'w')
+        score_file = open(os.path.join(args.results_path, 'score-rel-%s.pkl' %tp), 'wb')
     pred_rel_file = open(os.path.join(args.results_path, '%s-rel_results.txt' %tp), 'w')
 
     model.eval()
     total = 0
+    rel_scores = []
     n_correct = 0
     n_rel_correct = 0
     n_sub_recall = 0
@@ -121,7 +122,8 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
         neg_score = (neg_score1+neg_score2).data.squeeze().cpu().numpy()
 
         if write_score:
-            score_file.write('%s\n' %(' '.join(neg_score.astype('str'))))
+            rel_scores.append(neg_score)
+#            score_file.write('%s\n' %(' '.join(neg_score.astype('str'))))
 
         pred_rel, pred_rel_scores, pred_sub = rel_pruned(neg_score, data)
 
@@ -146,6 +148,9 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
             results_all_file.write('%s\t%s\t%s\n' %(data.subject, pred_sub[:3], data.subject in pred_sub))
             results_all_file.write('%s\t%s\n' %(data.relation, pred_rel_scores[:3]))
         '''
+
+    if write_score:
+        pickle.dump(rel_scores, score_file)
 
     accuracy = 100. * n_correct / total
     rel_acc = 100. * n_rel_correct / total

@@ -3,7 +3,7 @@
  
 # Author: QuYingqi
 # mail: cookiequ17@hotmail.com
-# Created Time: 2018-1-13
+# Created Time: 2017-11-09
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -12,8 +12,8 @@ import os, sys, glob
 import numpy as np
 
 from args import get_args
-from model import RelationRanking  ###
-from seqRankingLoader import SeqRankingLoader ###
+from model_att import RelationRanking  ###
+from seqRankingLoader import SeqRankingSepratedLoader as SeqRankingLoader ###
 
 # please set the configuration in the file : args.py
 args = get_args()
@@ -30,13 +30,16 @@ if torch.cuda.is_available() and not args.cuda:
 
 # load word vocab for questions, relation vocab for relations
 word_vocab = torch.load(args.vocab_file)
+word_vocab.add_start_token() # 加了替换sub_text的分隔符
 print('load word vocab, size: %s' % len(word_vocab))
+rel_vocab = torch.load(args.rel_vocab_file)
+print('load relation vocab, size: %s' %len(rel_vocab))
 
 # load data
-train_loader = SeqRankingLoader(args.train_file, args.gpu)
+train_loader = SeqRankingLoader(args.train_file, len(rel_vocab), args.gpu)
 print('load train data, batch_num: %d\tbatch_size: %d'
       %(train_loader.batch_num, train_loader.batch_size))
-valid_loader = SeqRankingLoader(args.valid_file, args.gpu)
+valid_loader = SeqRankingLoader(args.valid_file, len(rel_vocab), args.gpu)
 print('load valid data, batch_num: %d\tbatch_size: %d'
       %(valid_loader.batch_num, valid_loader.batch_size))
 
@@ -44,6 +47,10 @@ os.makedirs(args.save_path, exist_ok=True)
 
 # define models
 config = args
+config.n_cells = config.n_layers
+
+if config.birnn:
+    config.n_cells *= 2
 print(config)
 with open(os.path.join(config.save_path, 'param.log'), 'w') as f:
     f.write(str(config))
@@ -51,11 +58,12 @@ with open(os.path.join(config.save_path, 'param.log'), 'w') as f:
 if args.resume_snapshot:
     model = torch.load(args.resume_snapshot, map_location=lambda storage, location: storage)
 else:
-    model = RelationRanking(word_vocab, config)
+    model = RelationRanking(word_vocab, rel_vocab, config)
     if args.word_vectors:
         if os.path.isfile(args.vector_cache):
             pretrained = torch.load(args.vector_cache)
             model.word_embed.word_lookup_table.weight.data.copy_(pretrained)
+#            model.word_embed2.word_lookup_table.weight.data.copy_(pretrained) ###
         else:
             pretrained = model.word_embed.load_pretrained_vectors(args.word_vectors, binary=False,
                                             normalize=args.word_normalize)
@@ -99,10 +107,15 @@ for epoch in range(1, args.epochs+1):
 #        print(batch_idx)
 #        if batch_idx > 3:break
         iterations += 1
+        pos_rel = batch[1]
+        neg_rel = batch[2]
         model.train();
         optimizer.zero_grad()
 
-        pos_score, neg_score = model(batch)
+        '''
+        pos_score1, pos_score2, neg_score1, neg_score2 = model(batch)
+        pos_score = pos_score1+pos_score2
+        neg_score = neg_score1+neg_score2
         n_correct += (torch.sum(torch.gt(pos_score, neg_score), 0).data == neg_score.size(0)).sum()
         n_total += pos_score.size(1)
         train_acc = 100. * n_correct / n_total
@@ -110,8 +123,28 @@ for epoch in range(1, args.epochs+1):
         ones = torch.autograd.Variable(torch.ones(pos_score.size(0)*pos_score.size(1)))
         if args.cuda:
             ones = ones.cuda()
-        loss = criterion(pos_score.contiguous().view(-1), neg_score.contiguous().view(-1), ones)
+        loss = criterion(pos_score.contiguous().view(-1,1).squeeze(1), neg_score.contiguous().view(-1,1).squeeze(1), ones)
         loss.backward()
+
+        '''
+        pos_score1, pos_score2, neg_score1, neg_score2 = model(batch)
+        neg_size, batch_size = pos_score1.size()
+        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data
+                      == neg_size).sum()
+        n_total += batch_size
+        train_acc = 100. * n_correct / n_total
+        ones = torch.autograd.Variable(torch.ones(neg_size*batch_size))
+        if args.cuda:
+            ones = ones.cuda()
+        loss1 = criterion(pos_score1.contiguous().view(-1,1).squeeze(1),
+                          neg_score1.contiguous().view(-1,1).squeeze(1), ones)
+        loss1.backward(retain_graph=True)
+
+        loss2 = criterion(pos_score2.contiguous().view(-1,1).squeeze(1),
+                          neg_score2.contiguous().view(-1,1).squeeze(1), ones)
+        loss2.backward()
+
+        loss = loss1+loss2
 
         # clip the gradient
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip_gradient)
@@ -137,9 +170,9 @@ for epoch in range(1, args.epochs+1):
             pred_list = []
 
             for valid_batch_idx, valid_batch in enumerate(valid_loader.next_batch(False)):
-                val_ps, val_ns = model(valid_batch)
-                val_neg_size, val_batch_size = val_ps.size()
-                n_dev_correct += (torch.sum(torch.gt(val_ps, val_ns), 0).data  == val_neg_size).sum()
+                val_ps1, val_ps2, val_ns1, val_ns2 = model(valid_batch)
+                val_neg_size, val_batch_size = val_ps1.size()
+                n_dev_correct += (torch.sum(torch.gt(val_ps1+val_ps2, val_ns1+val_ns2), 0).data  == val_neg_size).sum()
                 valid_total += val_batch_size
 
             dev_acc = 100. * n_dev_correct / valid_total

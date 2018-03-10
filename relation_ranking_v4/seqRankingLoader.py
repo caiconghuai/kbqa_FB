@@ -3,8 +3,7 @@
  
 # Author: QuYingqi
 # mail: cookiequ17@hotmail.com
-# Created Time: 2018-01-12
-# for matchPyramid
+# Created Time: 2018-01-27
 
 import sys, os
 import pickle
