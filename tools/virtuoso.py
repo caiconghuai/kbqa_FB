@@ -3,7 +3,7 @@ import sys, json
 from urllib import parse, request
 
 # Setting global variables
-data_source = 'fb:'
+data_source = 'fb2m:'
 query_url   = 'http://localhost:8890/sparql/'
 
 # HTTP URL is constructed accordingly with JSON query results format in mind.

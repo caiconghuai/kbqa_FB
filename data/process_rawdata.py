@@ -27,7 +27,9 @@ def extract(line):
         obj = 'fb:m.02822'
     question = fields[-1].replace('\\\\','')
     tokens   = word_tokenize(question)
-    return ' '.join(tokens).lower(), sub, rel, obj, len(tokens)
+    question = ' '.join(tokens).lower()
+    tmp = question.split(' . ')
+    return '. '.join(tmp), sub, rel, obj, len(tokens)-len(tmp)+1
 
 def get_indices(src_list, pattern_list):
     indices = None
@@ -64,6 +66,9 @@ def query_golden_subs(data):
 
     return golden_subs
 
+def search_ngrams():
+    pass
+
 def reverse_link(question, subject):
     # get question tokens
     tokens = question.split()
@@ -85,31 +90,17 @@ def reverse_link(question, subject):
 
     return text_subject, text_attention_indices
 
-def form_anonymous_quesion(data):
-    anonymous_question = None
+def form_question_pattern(data):
+    question_pattern = None
     if data.text_attention_indices:
         anonymous_tokens = []
         tokens = data.question.split()
         anonymous_tokens.extend(tokens[:data.text_attention_indices[0]])
         anonymous_tokens.append('X')
         anonymous_tokens.extend(tokens[data.text_attention_indices[-1]+1:])
-        anonymous_question = ' '.join(anonymous_tokens)
+        question_pattern = ' '.join(anonymous_tokens)
 
-    return anonymous_question
-
-def form_type_based_question(data):
-    typed_question = None
-    num_type_token = -1
-    if data.text_attention_indices and data.sub_ntp:
-        tokens = data.question.split()
-        new_tokens = []
-        new_tokens.extend(tokens[:data.text_attention_indices[0]])
-        new_tokens.append(data.sub_ntp)
-        new_tokens.extend(tokens[data.text_attention_indices[-1]+1:])
-        typed_question = ' '.join(new_tokens)
-        num_type_token = len(new_tokens)
-
-    return typed_question, num_type_token
+    return question_pattern
 
 def knowledge_graph_attributes(data_list, pid = 0):
     # Open log file
@@ -125,9 +116,8 @@ def knowledge_graph_attributes(data_list, pid = 0):
         # Step-2: reverse linking
         data.text_subject, data.text_attention_indices = reverse_link(data.question, data.subject)
 
-        # Step-3: create anonymous question for LTG-CNN+
-        if split == 'train':
-            data.anonymous_question = form_anonymous_quesion(data)
+        # Step-3: create question pattern
+        data.question_pattern = form_question_pattern(data)
 
         qadata_list.append(data)
         

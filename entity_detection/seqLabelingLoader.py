@@ -31,11 +31,6 @@ def create_seq_labeling_data(batch_size, qa_data, word_vocab, NoneLabel=0, TrueL
         log_file.write('%s\t%s\n' %(data.question, ' '.join(tokens[labels[0]:labels[-1]+1])))
 
         if seq_index % batch_size == 0:
-            '''
-            if batch_index>=0:
-                print(seqs[batch_index])
-                print(seq_labels[batch_index])
-            '''
             seq_index = 0
             batch_index += 1
             seqs.append(torch.LongTensor(len(tokens), batch_size).fill_(pad_index))
@@ -70,5 +65,10 @@ class SeqLabelingLoader():
             yield self.seqs[i], self.seq_labels[i]
 
 if __name__ == '__main__':
-    word_vocab = torch.load('../vocab/vocab.word.pt')
+    if not os.path.exists('data'):
+        os.mkdir('data')
+
+    word_vocab = torch.load('../vocab/vocab.word&rel.pt')
     create_seq_labeling_data(128, '../data/QAData.valid.pkl', word_vocab)
+    create_seq_labeling_data(128, '../data/QAData.train.pkl', word_vocab)
+    create_seq_labeling_data(128, '../data/QAData.test.pkl', word_vocab)

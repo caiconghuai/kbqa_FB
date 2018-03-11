@@ -25,7 +25,7 @@ virtuoso-t +foreground +configfile /dump_virtuoso_data/virtuoso.ini & # start th
 serverPID=$!
 sleep 10
 
-isql-vt 1111 dba dba exec="ld_dir_all('./dump_virtuoso_data', '*', 'fb2m:');"
+isql-vt 1111 dba dba exec="ld_dir_all('`pwd`/dump_virtuoso_data', '*', 'fb2m:');"
 pids=()
 for i in `seq 1 4`; do
 	isql-vt 1111 dba dba exec="rdf_loader_run();" &
@@ -35,7 +35,15 @@ for pid in ${pids[@]}; do
 	wait $pid
 done
 
-# 4. create Vocabs
+# 4. preprocess training data
+cd ../data
+
+echo "\n\npreprocess training data...\n"
+python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_train.txt 5
+python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_valid.txt 2
+python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_test.txt 5
+
+# 5. create Vocabs
 cd ../vocab
 
 echo "\n\nDownloading Embeddings...\n"
@@ -46,14 +54,8 @@ rm glove.42B.300d.zip
 echo "create vocabs...\n"
 python create_vocab.py
 
-# 5. create training data
-cd ../data
+# 6. create training data
+cd ../entity_detection
+python seqLabelingLoader.py
 
-echo "\n\ncreate training data...\n"
-python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_train.txt 6
-python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_valid.txt 6
-python process_rawdata.py ../freebase_data/SimpleQuestions_v2/annotated_fb_data_test.txt 6
-
-###create_seq_labeling_data
-###create_seq_ranking_data_word
-
+echo "\n\nDONE!"
