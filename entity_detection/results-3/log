@@ -1,0 +1,14 @@
+load word vocab, size: 63163
+load test data, batch_num: 162  batch_size: 128
+test    accuracy: 93.544958     correct: 19361  total: 20697
+Precision:  94.003476% Recall:  94.076150% F1 Score:  94.039799%
+subject accuracy: 93.564285     correct: 19365  total:20697
+extend accuracy: 95.670870      correct: 19801  total:20697
+--------------------------------------------------------------------------------
+load valid data, batch_num: 82  batch_size: 128
+valid   accuracy: 94.752046     correct: 9840   total: 10385
+Precision:  94.199692% Recall:  94.308552% F1 Score:  94.254090%
+subject accuracy: 93.923929     correct: 9754   total:10385
+extend accuracy: 95.936447      correct: 9963   total:10385
+--------------------------------------------------------------------------------
+load train data, batch_num: 566 batch_size: 128

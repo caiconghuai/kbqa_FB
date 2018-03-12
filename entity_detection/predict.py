@@ -54,13 +54,17 @@ def predict(dataset=args.test_file, tp='test',
     n_correct = 0
     n_correct_sub = 0
     n_correct_extend = 0
+    n_empty = 0
     linenum = 1
     qa_data_idx = 0
+
     if write:
         results_file = open(os.path.join(args.results_path, '%s-results.txt' %tp), 'w')
         results_file_sub = open(os.path.join(args.results_path, '%s-results-subject.txt' %tp), 'w')
-    new_qa_data = []
-    qadata_save_path = open(os.path.join(args.results_path, 'QAData.label.%s.pkl' %(tp)), 'wb')
+
+    if save_qadata:
+        new_qa_data = []
+        qadata_save_path = open(os.path.join(args.results_path, 'QAData.label.%s.pkl' %(tp)), 'wb')
 
     gold_list = []
     pred_list = []
@@ -83,14 +87,13 @@ def predict(dataset=args.test_file, tp='test',
 
         for i in range(data_loader.batch_size):
             # 转为QAData中对应的text，去FB中查MID，计算subject的准确率
+            while qa_data_idx < len(qa_data) and not qa_data[qa_data_idx].text_subject:
+                qa_data_idx += 1            # 在loader里去掉了没有text_subject的数据，而QADate是全的
             if qa_data_idx >= len(qa_data): # 最后一个batch后面都是<pad>填充的，此时qa_data已经找到头了
                 break
-            while qa_data_idx < len(qa_data)-1 and not qa_data[qa_data_idx].text_subject:
-                qa_data_idx += 1            # 在loader里去掉了没有text_subject的数据，而QADate是全的
             _qa_data = qa_data[qa_data_idx]
             tokens = np.array(_qa_data.question.split())
             pred_text = ' '.join(tokens[np.where(index_tag[i][:len(tokens)])]) # index_tag可能比实际的question长，因为后面加了<pad>
-#            pred_subject = virtuoso.str_query_id(pred_text)
 
             # 计算扩展生成candidate subject的准确率
             pred_sub, pred_sub_extend = get_candidate_sub(tokens, index_tag[i])
@@ -98,6 +101,8 @@ def predict(dataset=args.test_file, tp='test',
                 n_correct_sub += 1
             if _qa_data.subject in pred_sub_extend:
                 n_correct_extend += 1
+            if not pred_sub_extend:
+                n_empty += 1
 
             if write:
                 if pred_sub == pred_sub_extend:
@@ -119,8 +124,11 @@ def predict(dataset=args.test_file, tp='test',
                     _qa_data.add_candidate(sub, rel)
                 if hasattr(_qa_data, 'cand_rel'):
                     _qa_data.remove_duplicate()
-                new_qa_data.append(_qa_data)
 
+                if _qa_data.subject not in pred_sub_extend:
+                    _qa_data.neg_rel = virtuoso.id_query_out_rel(_qa_data.subject)
+
+                new_qa_data.append((_qa_data, len(_qa_data.question_pattern)))
 
             linenum += 1
             qa_data_idx += 1
@@ -136,13 +144,17 @@ def predict(dataset=args.test_file, tp='test',
 
     extend_accuracy = 100. * n_correct_extend / total
     print('extend accuracy: %8.6f\tcorrect: %d\ttotal:%d' %(extend_accuracy, n_correct_extend, total))
+
+    print('suject not found: %8.6f\t%d' %(n_empty/total, n_empty))
     print("-" * 80)
 
     if write:
         results_file.close()
         results_file_sub.close()
     if save_qadata:
-        pickle.dump(new_qa_data, qadata_save_path)
+        data_list = [data[0] for data in sorted(new_qa_data, key = lambda data: data[1],
+                                                reverse=True)]
+        pickle.dump(data_list, qadata_save_path)
 
 def get_candidate_sub(question_tokens, pred_tag):
     flag = False
@@ -175,7 +187,6 @@ def get_candidate_sub(question_tokens, pred_tag):
                 sub_list.extend(subject)
             if sub_list:
                 return pred_sub, sub_list
-    #！处理pred_tag为0的情况
     return pred_sub, sub_list
 
 # run the model on the test set and write the output to a file
