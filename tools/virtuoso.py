@@ -34,8 +34,8 @@ def sparql_query(query, URL, format='application/json'):
 # Using freebase mid to query its types
 def id_query_type(node_id):
     query = '''
-        SELECT ?type WHERE {<%s> <fb:type.object.type> ?type}
-    ''' % (node_id)
+        SELECT ?type FROM <%s> WHERE {<%s> <fb:type.object.type> ?type}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -47,8 +47,8 @@ def id_query_type(node_id):
 # Using freebase mid to query its original cased name
 def id_query_en_name(node_id):
     query = '''
-        SELECT ?name WHERE {<%s> <fb:type.object.en_name> ?name}
-    ''' % (node_id)
+        SELECT ?name FROM <%s> WHERE {<%s> <fb:type.object.en_name> ?name}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -60,8 +60,8 @@ def id_query_en_name(node_id):
 # Using freebase mid to query its original cased alias
 def id_query_en_alias(node_id):
     query = '''
-        SELECT ?alias WHERE {<%s> <fb:common.topic.en_alias> ?alias}
-    ''' % (node_id)
+        SELECT ?alias FROM <%s> WHERE {<%s> <fb:common.topic.en_alias> ?alias}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -73,8 +73,8 @@ def id_query_en_alias(node_id):
 # Using freebase mid to query its processed & tokenized name
 def id_query_name(node_id):
     query = '''
-        SELECT ?name WHERE {<%s> <fb:type.object.name> ?name}
-    ''' % (node_id)
+        SELECT ?name FROM <%s> WHERE {<%s> <fb:type.object.name> ?name}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -86,8 +86,8 @@ def id_query_name(node_id):
 # Using freebase mid to query its processed & tokenized alias
 def id_query_alias(node_id):
     query = '''
-        SELECT ?alias WHERE {<%s> <fb:common.topic.alias> ?alias}
-    ''' % (node_id)
+        SELECT ?alias FROM <%s> WHERE {<%s> <fb:common.topic.alias> ?alias}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -99,8 +99,8 @@ def id_query_alias(node_id):
 # Using freebase mid to query its processed & tokenized name & alias
 def id_query_str(node_id):
     query = '''
-        SELECT ?str WHERE { {<%s> <fb:type.object.name> ?str} UNION {<%s> <fb:common.topic.alias> ?str} }
-    ''' % (node_id, node_id)
+        SELECT ?str FROM <%s> WHERE { {<%s> <fb:type.object.name> ?str} UNION {<%s> <fb:common.topic.alias> ?str} }
+    ''' % (data_source, node_id, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -108,11 +108,12 @@ def id_query_str(node_id):
         return list(set(name_list))
     except:
         return []
+
 # Using freebase mid to query all relations coming out of the entity
 def id_query_out_rel(node_id, unique = True):
     query = '''
-        SELECT ?relation WHERE {<%s> ?relation ?object}
-    ''' % (node_id)
+        SELECT ?relation FROM <%s> WHERE {<%s> ?relation ?object}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -124,8 +125,8 @@ def id_query_out_rel(node_id, unique = True):
 # Using freebase mid to query all relations coming into the entity
 def id_query_in_rel(node_id, unique = True):
     query = '''
-        SELECT ?relation WHERE {?subject ?relation <%s>}
-    ''' % (node_id)
+        SELECT ?relation FROM <%s> WHERE {?subject ?relation <%s>}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -134,12 +135,11 @@ def id_query_in_rel(node_id, unique = True):
     except:
         return []
 
-
 # Using the name of an entity to query its freebase mid
 def name_query_id(name):
     query = '''
-        SELECT ?node_id WHERE {?node_id <fb:type.object.name> "%s"}
-    ''' % (name)
+        SELECT ?node_id FROM <%s> WHERE {?node_id <fb:type.object.name> "%s"}
+    ''' % (data_source, name)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -151,8 +151,8 @@ def name_query_id(name):
 # Using the alias of an entity to query its freebase mid
 def alias_query_id(alias):
     query = '''
-        SELECT ?node_id WHERE {?node_id <fb:common.topic.alias> "%s"}
-    ''' % (alias)
+        SELECT ?node_id FROM <%s> WHERE {?node_id <fb:common.topic.alias> "%s"}
+    ''' % (data_source, alias)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -164,8 +164,8 @@ def alias_query_id(alias):
 # Using the alias/name of an entity to query its freebase mid
 def str_query_id(string):
     query = '''
-        SELECT ?node_id WHERE  { {?node_id <fb:common.topic.alias> "%s"} UNION {?node_id <fb:type.object.name> "%s"} }
-    ''' % (string, string)
+        SELECT ?node_id FROM <%s> WHERE  { {?node_id <fb:common.topic.alias> "%s"} UNION {?node_id <fb:type.object.name> "%s"} }
+    ''' % (data_source, string, string)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -177,8 +177,8 @@ def str_query_id(string):
 # Using freebase mid to query all object coming out of the entity
 def id_query_in_entity(node_id, unique = True):
     query = '''
-        SELECT ?subject WHERE {?subject ?relation <%s>}
-    ''' % (node_id)
+        SELECT ?subject FROM <%s> WHERE {?subject ?relation <%s>}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -190,8 +190,8 @@ def id_query_in_entity(node_id, unique = True):
 # Using freebase mid to query all relation coming into the entity
 def id_query_out_entity(node_id, unique = True):
     query = '''
-        SELECT ?object WHERE {<%s> ?relation ?object}
-    ''' % (node_id)
+        SELECT ?object FROM <%s> WHERE {<%s> ?relation ?object}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -203,8 +203,8 @@ def id_query_out_entity(node_id, unique = True):
 # Using the subject and relation to query the corresponding object
 def query_object(subject, relation):
     query = '''
-        SELECT ?object WHERE {<%s> <%s> ?object}
-    ''' % (subject, relation)
+        SELECT ?object FROM <%s> WHERE {<%s> <%s> ?object}
+    ''' % (data_source, subject, relation)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -215,8 +215,8 @@ def query_object(subject, relation):
 # Using the object and relation to query the corresponding subject 
 def query_subject(obj, relation):
     query = '''
-        SELECT ?subject WHERE {?subject <%s> <%s>}
-    ''' % (relation, obj)
+        SELECT ?subject FROM <%s> WHERE {?subject <%s> <%s>}
+    ''' % (data_source, relation, obj)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -227,8 +227,8 @@ def query_subject(obj, relation):
 # Using the subject and object to query the corresponding relation
 def query_relation(sub, obj):
     query = '''
-        SELECT ?relation WHERE {<%s> ?relation <%s>}
-    ''' % (sub, obj)
+        SELECT ?relation FROM <%s> WHERE {<%s> ?relation <%s>}
+    ''' % (data_source, sub, obj)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -239,8 +239,8 @@ def query_relation(sub, obj):
 
 def relation_query_subject(relation):
     query = '''
-        SELECT ?subject WHERE {?subject <%s> ?object}
-    '''% (relation)
+        SELECT ?subject FROM <%s> WHERE {?subject <%s> ?object}
+    '''% (data_source, relation)
     json_response = sparql_query(query, query_url)
 
     try:
@@ -251,8 +251,8 @@ def relation_query_subject(relation):
 # Check whether a node is a CVT node
 def check_cvt(node_id):
     query = '''
-        SELECT ?tag WHERE {<%s> <fb:cvt_node_identifier> ?tag}
-    ''' % (node_id)
+        SELECT ?tag FROM <%s> WHERE {<%s> <fb:cvt_node_identifier> ?tag}
+    ''' % (data_source, node_id)
     json_response = sparql_query(query, query_url)
     ret = [str(item['tag']['value']) for item in json_response['results']['bindings']]
 
