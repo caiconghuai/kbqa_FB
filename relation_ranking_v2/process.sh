@@ -1,4 +1,4 @@
-python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
+python train.py --rel_vocab_file ../vocab/fb5m-vocabs/vocab.rel.sep.pt \
 	--save_path saved_checkpoints/model-20 \
 	--epochs 35 \
 	--train_file data/train.relation_ranking.separated2.pt \
@@ -9,5 +9,6 @@ python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
     	--d_hidden 128 \
 	--n_layers 2 \
 	--gpu 6 \
-	--rnn_type gru  
-	--resume_snapshot saved_checkpoints/model-16/best_snapshot_iter_28800_devf1_90.45138888888889_model.pt
+	--rnn_type gru \  
+        --vocab_file ../vocab/fb5m-vocabs/vocab.word.pt \
+	--vector_cache ../vector_cache/input_vectors_2.pt
