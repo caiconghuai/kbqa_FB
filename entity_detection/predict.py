@@ -189,11 +189,11 @@ def get_candidate_sub(question_tokens, pred_tag):
                 return pred_sub, sub_list
     return pred_sub, sub_list
 
-# run the model on the test set and write the output to a file
-predict(args.test_file, "test")
-
 # run the model on the dev set and write the output to a file
 predict(args.valid_file, "valid")
+
+# run the model on the test set and write the output to a file
+predict(args.test_file, "test")
 
 # run the model on the train set and write the output to a file
 predict(args.train_file, 'train')
