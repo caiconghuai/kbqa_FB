@@ -30,9 +30,8 @@ if not args.trained_model:
 
 # load word vocab for questions, relation vocab for relations
 word_vocab = torch.load(args.vocab_file)
-word_vocab.add_start_token() # 加了替换sub_text的分隔符
 print('load word vocab, size: %s' % len(word_vocab))
-rel_vocab = torch.load('../vocab/vocab.rel.sep.pt')
+rel_vocab = torch.load(args.rel_vocab_file)
 print('load relation vocab, size: %s' %len(rel_vocab))
 
 os.makedirs(args.results_path, exist_ok=True)
@@ -43,7 +42,7 @@ model = torch.load(args.trained_model, map_location=lambda storage,location: sto
 def evaluate(dataset = args.test_file, tp = 'test'):
 
     # load batch data for predict
-    data_loader = SeqRankingSepratedLoader(dataset, len(rel_vocab), args.gpu)
+    data_loader = SeqRankingSepratedLoader(dataset, args.gpu)
     print('load %s data, batch_num: %d\tbatch_size: %d'
             %(tp, data_loader.batch_num, data_loader.batch_size))
 
@@ -51,7 +50,7 @@ def evaluate(dataset = args.test_file, tp = 'test'):
     n_correct = 0
 
     for data_batch_idx, data_batch in enumerate(data_loader.next_batch(shuffle=False)):
-        if data_batch_idx > 1:break
+#        if data_batch_idx > 1:break
         pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch)
         neg_size, batch_size = pos_score1.size()
         n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data ==
@@ -73,9 +72,9 @@ def evaluate(dataset = args.test_file, tp = 'test'):
             pos_rel_2 = rel_vocab[1].index2word[pos_rel_trans2[j]]
             neg_rel_1 = rel_vocab[0].index2word[neg_rel_trans1[pred_rel[j]][j]]
             neg_rel_2 = rel_vocab[1].index2word[neg_rel_trans2[pred_rel[j]][j]]
-            print(question)
-            print(pos_rel_1+'.'+pos_rel_2, pos_score[0][j])
-            print(neg_rel_1+'.'+neg_rel_2, pred_rel_scores[j])
+#            print(question)
+#            print(pos_rel_1+'.'+pos_rel_2, pos_score[0][j])
+#            print(neg_rel_1+'.'+neg_rel_2, pred_rel_scores[j])
 
     total = data_loader.batch_num*data_loader.batch_size
     accuracy = 100. * n_correct / (total)
@@ -95,14 +94,12 @@ def rel_pruned(neg_score, data):
 
 def predict(tp='test', write_res=args.write_result, write_score=args.write_score):
     # load batch data for predict
-    qa_pattern_file = '../data/QAData.label.pattern.%s.pkl' %tp
+    qa_pattern_file = '../data/QAData.label.%s.pkl' %tp
     data_loader = CandidateRankingLoader(qa_pattern_file, word_vocab, rel_vocab, args.gpu)
     print('load %s data, batch_num: %d\tbatch_size: %d' %(tp, data_loader.batch_num, 1))
     if write_res:
         results_file = open(os.path.join(args.results_path, '%s-pred_rel-wrong.txt' %tp), 'w')
         results_all_file = open(os.path.join(args.results_path, '%s-results-all.txt' %tp), 'w')
-    if write_score:
-        score_file = open(os.path.join(args.results_path, 'score-rel-%s.pkl' %tp), 'wb')
     pred_rel_file = open(os.path.join(args.results_path, '%s-rel_results.txt' %tp), 'w')
 
     model.eval()
@@ -150,6 +147,7 @@ def predict(tp='test', write_res=args.write_result, write_score=args.write_score
         '''
 
     if write_score:
+        score_file = open(os.path.join(args.results_path, 'score-rel-%s.pkl' %tp), 'wb')
         pickle.dump(rel_scores, score_file)
 
     accuracy = 100. * n_correct / total

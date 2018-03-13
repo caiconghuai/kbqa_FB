@@ -4,10 +4,19 @@ test    accuracy: 93.820360     correct: 19418  total: 20697
 Precision:  94.063223% Recall:  94.317743% F1 Score:  94.190311%
 subject accuracy: 93.839687     correct: 19422  total:20697
 extend accuracy: 95.825482      correct: 19833  total:20697
+suject not found: 0.002223      46
 --------------------------------------------------------------------------------
 load valid data, batch_num: 82  batch_size: 128
-valid   accuracy: 95.117959     correct: 9878   total: 10385
+valid   accuracy: 95.127119     correct: 9878   total: 10384
 Precision:  94.423613% Recall:  94.578197% F1 Score:  94.500842%
-subject accuracy: 94.241695     correct: 9787   total:10385
-extend accuracy: 95.974964      correct: 9967   total:10385
+subject accuracy: 94.250770     correct: 9787   total:10384
+extend accuracy: 95.984206      correct: 9967   total:10384
+suject not found: 0.003371      35
+--------------------------------------------------------------------------------
+load train data, batch_num: 566 batch_size: 128
+train   accuracy: 99.885419     correct: 72355  total: 72438
+Precision:  99.877138% Recall:  99.878517% F1 Score:  99.877827%
+subject accuracy: 99.872995     correct: 72346  total:72438
+extend accuracy: 99.903366      correct: 72368  total:72438
+suject not found: 0.000014      1
 --------------------------------------------------------------------------------

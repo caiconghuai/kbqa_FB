@@ -62,9 +62,7 @@ def predict(dataset=args.test_file, tp='test',
         results_file = open(os.path.join(args.results_path, '%s-results.txt' %tp), 'w')
         results_file_sub = open(os.path.join(args.results_path, '%s-results-subject.txt' %tp), 'w')
 
-    if save_qadata:
-        new_qa_data = []
-        qadata_save_path = open(os.path.join(args.results_path, 'QAData.label.%s.pkl' %(tp)), 'wb')
+    new_qa_data = []
 
     gold_list = []
     pred_list = []
@@ -125,10 +123,10 @@ def predict(dataset=args.test_file, tp='test',
                 if hasattr(_qa_data, 'cand_rel'):
                     _qa_data.remove_duplicate()
 
-                if _qa_data.subject not in pred_sub_extend:
-                    _qa_data.neg_rel = virtuoso.id_query_out_rel(_qa_data.subject)
+#                if _qa_data.subject not in pred_sub_extend:
+#                    _qa_data.neg_rel = virtuoso.id_query_out_rel(_qa_data.subject)
 
-                new_qa_data.append((_qa_data, len(_qa_data.question_pattern)))
+                new_qa_data.append((_qa_data, len(_qa_data.question_pattern.split())))
 
             linenum += 1
             qa_data_idx += 1
@@ -152,6 +150,7 @@ def predict(dataset=args.test_file, tp='test',
         results_file.close()
         results_file_sub.close()
     if save_qadata:
+        qadata_save_path = open(os.path.join(args.results_path, 'QAData.label.%s.pkl' %(tp)), 'wb')
         data_list = [data[0] for data in sorted(new_qa_data, key = lambda data: data[1],
                                                 reverse=True)]
         pickle.dump(data_list, qadata_save_path)

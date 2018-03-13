@@ -1,14 +1,10 @@
-python train.py --rel_vocab_file ../vocab/fb5m-vocabs/vocab.rel.sep.pt \
+python train.py \
 	--save_path saved_checkpoints/model-2 \
 	--epochs 35 \
-	--train_file data/train.relation_ranking.separated2.pt \
-	--valid_file data/valid.relation_ranking.separated2.pt \
 	--loss_margin 1 \
 	--dev_every 600 \
 	--d_rel_embed 128 \
     	--d_hidden 128 \
 	--n_layers 2 \
 	--gpu 6 \
-	--rnn_type gru \
-        --vocab_file ../vocab/fb5m-vocabs/vocab.word.pt \
-	--vector_cache ../vector_cache/input_vectors_2.pt
+	--rnn_type gru 

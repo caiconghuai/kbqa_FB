@@ -36,10 +36,10 @@ rel_vocab = torch.load(args.rel_vocab_file)
 print('load relation vocab, size: %s' %len(rel_vocab))
 
 # load data
-train_loader = SeqRankingLoader(args.train_file, len(rel_vocab), args.gpu)
+train_loader = SeqRankingLoader(args.train_file, args.gpu)
 print('load train data, batch_num: %d\tbatch_size: %d'
       %(train_loader.batch_num, train_loader.batch_size))
-valid_loader = SeqRankingLoader(args.valid_file, len(rel_vocab), args.gpu)
+valid_loader = SeqRankingLoader(args.valid_file, args.gpu)
 print('load valid data, batch_num: %d\tbatch_size: %d'
       %(valid_loader.batch_num, valid_loader.batch_size))
 

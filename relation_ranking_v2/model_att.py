@@ -52,11 +52,9 @@ class RelationRanking(nn.Module):
                         nn.Linear(seq_in_size, config.d_rel_embed)
         )
 
-    def question_encoder(self, inputs, seqs_len, rel_embed, pos=None):
+    def question_encoder(self, inputs):
         '''
         :param inputs: (batch, dim1)
-        :param rel_embed: (batch, dim2) or (neg_size, batch, dim2)
-        return: (batch, 1)
         '''
         batch_size = inputs.size(0)
         state_shape = self.config.n_cells, batch_size, self.config.d_hidden
@@ -71,6 +69,14 @@ class RelationRanking(nn.Module):
         # shape of `encoder` - (batch size, hidden size X num directions)
 #        encoder = ht[-1] if not self.config.birnn else ht[-2:].transpose(0,1).contiguous().view(batch_size, -1)
 #        seq_encode = self.seq_out(encoder)
+        return outputs
+
+    def cal_score(self, outputs, seqs_len, rel_embed, pos=None):
+        '''
+        :param rel_embed: (batch, dim2) or (neg_size, batch, dim2)
+        return: (batch, 1)
+        '''
+        batch_size = outputs.size(0)
         if pos:
             neg_size = pos
         else: # neg的要扩展
@@ -80,17 +86,23 @@ class RelationRanking(nn.Module):
                             seq_emb_size).contiguous().view(neg_size*batch_size, seq_len, -1)
             rel_embed = rel_embed.view(neg_size * batch_size, -1)
             seqs_len = seqs_len.unsqueeze(0).expand(neg_size, batch_size).contiguous().view(neg_size*batch_size)
+
         # `seq_encode` - (batch, hidden size X num directions)
         # `weight` - (batch, length)
  #       seq_att, weight = self.question_attention.forward(rel_embed, outputs, seqs_len)
         seq_att, weight = self.question_attention.forward(rel_embed, outputs)
  #       if pos:
  #           print('weight:', weight)
-#        seq_encode = self.dropout(seq_att)
+ #       seq_encode = self.dropout(seq_att)
         seq_encode = self.seq_out(seq_att)
+
         # `score` - (batch, 1) or (neg_size * batch, 1)
-#        score = self.bilinear(seq_encode, rel_embed)
-        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+ #       score = self.bilinear(seq_encode, rel_embed)
+#        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+        dot = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+        dis = seq_encode - rel_embed
+        euclidean = torch.sqrt(torch.sum(dis * dis, 1, keepdim=True))
+        score = (1/(1+euclidean)) * (1/1+torch.exp(-(dot+1)))
 
         if pos:  # pos要把结果扩展
             score = score.squeeze(1).unsqueeze(0).expand(neg_size, batch_size)
@@ -104,6 +116,8 @@ class RelationRanking(nn.Module):
 #        print('seqs:', seqs)
         # shape (batch_size, sequence length, dimension of embedding)
         inputs = self.word_embed.forward(seqs)
+        outputs = self.question_encoder(inputs)
+
         # shape (batch_size, dimension of rel embedding)
         pos_rel1_embed = self.rel1_embed.word_lookup_table(pos_rel1)
         pos_rel2_embed = self.rel2_embed.word_lookup_table(pos_rel2)
@@ -117,8 +131,8 @@ class RelationRanking(nn.Module):
 
         neg_size = neg_rel1_embed.size(0)
         # shape of `score` - (neg_size, batch_size)
-        pos_score1 = self.question_encoder(inputs, seq_len, pos_rel1_embed, neg_size)
-        pos_score2 = self.question_encoder(inputs, seq_len, pos_rel2_embed, neg_size)
-        neg_score1 = self.question_encoder(inputs, seq_len, neg_rel1_embed)
-        neg_score2 = self.question_encoder(inputs, seq_len, neg_rel2_embed)
+        pos_score1 = self.cal_score(outputs, seq_len, pos_rel1_embed, neg_size)
+        pos_score2 = self.cal_score(outputs, seq_len, pos_rel2_embed, neg_size)
+        neg_score1 = self.cal_score(outputs, seq_len, neg_rel1_embed)
+        neg_score2 = self.cal_score(outputs, seq_len, neg_rel2_embed)
         return pos_score1, pos_score2, neg_score1, neg_score2

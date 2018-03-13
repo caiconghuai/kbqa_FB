@@ -92,10 +92,10 @@ class RelationRanking(nn.Module):
         seq_att, weight = self.question_attention.forward(rel_embed, outputs)
  #       if pos:
  #           print('weight:', weight)
-#        seq_encode = self.dropout(seq_att)
+ #       seq_encode = self.dropout(seq_att)
         seq_encode = self.seq_out(seq_att)
         # `score` - (batch, 1) or (neg_size * batch, 1)
-#        score = self.bilinear(seq_encode, rel_embed)
+ #       score = self.bilinear(seq_encode, rel_embed)
         score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
 
         if pos:  # pos要把结果扩展

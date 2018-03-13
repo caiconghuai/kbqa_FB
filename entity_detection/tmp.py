@@ -10,7 +10,7 @@ sys.path.append('../vocab')
 from seqLabelingLoader import SeqLabelingLoader
 import numpy as np
 
-
+'''
 word_vocab = torch.load('../vocab/vocab.word.pt')
 seqs, labels = torch.load('data/train.entity_detection.pt')
 print(seqs[0])
@@ -30,3 +30,8 @@ for i,batch in enumerate(loader.next_batch(False)):
     for i in range(10):
         array = np.array(word_vocab.convert_to_word(question[i]))
         print(' '.join(array))
+'''
+sys.path.append('../tools')
+import virtuoso
+res = virtuoso.id_query_en_name('fb:m.07b6v8')
+print(res)

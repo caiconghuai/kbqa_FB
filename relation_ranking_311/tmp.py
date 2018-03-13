@@ -11,13 +11,9 @@ import numpy as np
 sys.path.append('../vocab')
 
 rel_vocab = torch.load('../vocab/vocab.rel.sep.pt')
-neg_range = len(rel_vocab)
-print(neg_range)
-word_vocab = torch.load('../vocab/vocab.word.pt')
-word_vocab.add_start_token()
+word_vocab = torch.load('../vocab/vocab.word&rel.pt')
 
-'''
-loader = SeqRankingSepratedLoader('data/train.relation_ranking.separated2.pt', neg_range, 0)
+loader = SeqRankingSepratedLoader('data/valid.relation_ranking.pt', 0)
 batch_size = loader.batch_size
 for i, batch in enumerate(loader.next_batch(False)):
     if i>3:break
@@ -53,5 +49,6 @@ for i, batch in enumerate(loader.next_question()):
     pos_rel_ = rel_vocab[0].convert_to_word(pos_rel_trans)
     print(pos_rel_trans, pos_rel_)
     print(neg_rel_trans)
+'''
 
 

@@ -4,7 +4,7 @@ import os
 from argparse import ArgumentParser
 
 def get_args():
-    parser = ArgumentParser(description='Simple QA model - Ferhan Ture')
+    parser = ArgumentParser(description='kbqa-FB model')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--rnn_type', type=str, default='lstm') # or use 'gru'
@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('--seed', type=int, default=1111, help='random seed for reproducing results')
     parser.add_argument('--save_path', type=str, default='saved_checkpoints')
     parser.add_argument('--vocab_file', type=str, default='../vocab/vocab.word&rel.pt')
-    parser.add_argument('--rel_vocab_file', type=str, default='../vocab/vocab.rel.pt')
+    parser.add_argument('--rel_vocab_file', type=str, default='../vocab/vocab.rel.sep.pt')
     parser.add_argument('--word_vectors', type=str, default='../vocab/glove.42B.300d.txt')
     parser.add_argument('--vector_cache', type=str, default=os.path.join(os.getcwd(), '../vector_cache/input_vectors.pt'))
     parser.add_argument('--word_normalize', action='store_true')
@@ -36,7 +36,7 @@ def get_args():
     parser.add_argument('--train_file', type=str, default='data/train.relation_ranking.pt')
     parser.add_argument('--valid_file', type=str, default='data/valid.relation_ranking.pt')
     parser.add_argument('--test_file', type=str, default='data/test.relation_ranking.pt')
-    parser.add_argument('--neg_size', type=int, default=512, help='negtive sampling number')
+    parser.add_argument('--neg_size', type=int, default=50, help='negtive sampling number')
     parser.add_argument('--loss_margin', type=float, default=1)
     # added for testing
     parser.add_argument('--trained_model', type=str, default='')
