@@ -1,4 +1,4 @@
-python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
+python train.py --rel_vocab_file ../vocab/fb5m-vocabs/vocab.rel.sep.pt \
 	--save_path saved_checkpoints/model-9 \
 	--epochs 35 \
 	--train_file data/train.relation_ranking.word.pt \
@@ -9,8 +9,8 @@ python train.py --rel_vocab_file ../vocab/vocab.rel.sep.pt \
 	--seq_maxlen 21 \
 	--rel_maxlen 17 \
 	--channel_size 8 \
-	--conv_kernel_1 2 \
-	--conv_kernel_2 2 \
+	--conv_kernel_1 3 \
+	--conv_kernel_2 3 \
 	--pool_kernel_1 3 \
 	--pool_kernel_2 3 \
 	--gpu 4 

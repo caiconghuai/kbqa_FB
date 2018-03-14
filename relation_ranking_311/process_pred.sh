@@ -1,5 +1,5 @@
 python predict.py \
 	--predict \
-	--trained_model saved_checkpoints/model-12/best_snapshot_iter_28800_devf1_90.46103395061728_model.pt \
+	--trained_model saved_checkpoints/model-2/best_snapshot_iter_20400_devf1_90.96050613496932_model.pt 
 	--write_score 
 	--write_result 

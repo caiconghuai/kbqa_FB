@@ -1,0 +1,11 @@
+python train_cnn.py \
+	--save_path saved_checkpoints/model-cnn-1 \
+	--epochs 35 \
+	--loss_margin 0.1 \
+	--dev_every 600 \
+	--channel_size 8 \
+	--conv_kernel_1 3 \
+	--conv_kernel_2 3 \
+	--pool_kernel_1 3 \
+	--pool_kernel_2 3 \
+	--gpu 1 

@@ -94,9 +94,16 @@ class RelationRanking(nn.Module):
  #           print('weight:', weight)
  #       seq_encode = self.dropout(seq_att)
         seq_encode = self.seq_out(seq_att)
+
         # `score` - (batch, 1) or (neg_size * batch, 1)
  #       score = self.bilinear(seq_encode, rel_embed)
-        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+#        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+
+        dot = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+        dis = seq_encode - rel_embed
+        euclidean = torch.sqrt(torch.sum(dis * dis, 1, keepdim=True))
+        score = (1/(1+euclidean)) * (1/1+torch.exp(-(dot+1)))
+
 
         if pos:  # pos要把结果扩展
             score = score.squeeze(1).unsqueeze(0).expand(neg_size, batch_size)

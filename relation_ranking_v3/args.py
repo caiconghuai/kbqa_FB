@@ -4,7 +4,7 @@ import os
 from argparse import ArgumentParser
 
 def get_args():
-    parser = ArgumentParser(description='Simple QA model - Ferhan Ture')
+    parser = ArgumentParser(description='kbqa-FB')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--d_word_embed', type=int, default=300)
@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--gpu', type=int, default=0, help='GPU device to use') # use -1 for CPU
     parser.add_argument('--seed', type=int, default=1111, help='random seed for reproducing results')
     parser.add_argument('--save_path', type=str, default='saved_checkpoints')
-    parser.add_argument('--vocab_file', type=str, default='../vocab/vocab.word&rel.pt')
+    parser.add_argument('--vocab_file', type=str, default='../vocab/fb5m-vocabs/vocab.word&rel.pt')
     parser.add_argument('--rel_vocab_file', type=str, default='../vocab/vocab.rel.pt')
     parser.add_argument('--word_vectors', type=str, default='../vocab/glove.42B.300d.txt')
     parser.add_argument('--vector_cache', type=str, default=os.path.join(os.getcwd(), '../vector_cache/input_vectors_2.pt'))
