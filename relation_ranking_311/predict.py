@@ -5,7 +5,6 @@ import torch
 import pickle
 
 from args import get_args
-from model import RelationRanking
 from seqRankingLoader import *
 sys.path.append('../tools')
 import virtuoso
@@ -51,15 +50,17 @@ def evaluate(dataset = args.test_file, tp = 'test'):
 
     for data_batch_idx, data_batch in enumerate(data_loader.next_batch(shuffle=False)):
 #        if data_batch_idx > 1:break
-#        pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch)
-#        neg_size, batch_size = pos_score1.size()
-#        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data ==
-#                      neg_size).sum()
+        pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch)
+        neg_size, batch_size = pos_score1.size()
+        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data ==
+                      neg_size).sum()
 
+        '''
         pos_score, neg_score = model(data_batch)
         neg_size, batch_size = pos_score.size()
         n_correct += (torch.sum(torch.gt(pos_score, neg_score), 0).data ==
                       neg_size).sum()
+        '''
 
         '''
         seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2, pos_rel, pos_len, neg_rel, neg_len = data_batch
@@ -128,9 +129,11 @@ def predict(qa_pattern_file, tp):
 
         pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch[:-1])
         neg_score = (neg_score1+neg_score2).data.squeeze().cpu().numpy()
+ #       pos_score, neg_score = model(data_batch[:-1])
+ #       neg_score = neg_score.data.squeeze().cpu().numpy()
 
         if args.write_score:
-            rel_scores.append(neg_score)
+            rel_scores.append((data.cand_rel, data.relation, neg_score))
 #            score_file.write('%s\n' %(' '.join(neg_score.astype('str'))))
 
         pred_rel, pred_rel_scores, pred_sub = rel_pruned(neg_score, data)

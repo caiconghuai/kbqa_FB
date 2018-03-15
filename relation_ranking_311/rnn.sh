@@ -1,16 +1,11 @@
 python train.py \
-	--save_path saved_checkpoints/model-merge-loss1 \
+	--save_path saved_checkpoints/model-loss2-dot \
 	--epochs 35 \
 	--loss_margin 1 \
 	--dev_every 600 \
 	--d_rel_embed 158 \
     	--d_hidden 186 \
 	--n_layers 2 \
-	--channel_size 8 \
-	--conv_kernel_1 3 \
-	--conv_kernel_2 3 \
-	--pool_kernel_1 3 \
-	--pool_kernel_2 3 \
 	--gpu 2 \
 	--lr 0.0005 \
 	--rnn_type gru 

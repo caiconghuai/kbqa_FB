@@ -13,6 +13,7 @@ sys.path.append('../vocab')
 rel_vocab = torch.load('../vocab/vocab.rel.sep.pt')
 word_vocab = torch.load('../vocab/vocab.word&rel.pt')
 
+'''
 loader = SeqRankingLoader('data/valid.relation_ranking.pt', 0)
 batch_size = loader.batch_size
 for i, batch in enumerate(loader.next_batch(False)):
@@ -64,7 +65,5 @@ for i, batch in enumerate(loader.next_question()):
     neg_rel_trans = neg_rel.squeeze(1).cpu().data.numpy()
     pos_rel_ = word_vocab.convert_to_word(pos_rel_trans)
     print(pos_rel_)
-    print(neg_rel_trans)
     neg_rel_ = word_vocab.convert_to_word(neg_rel_trans[0])
     print(neg_rel_)
-'''

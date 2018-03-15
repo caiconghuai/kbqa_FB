@@ -1,5 +1,5 @@
 python train_cnn.py \
-	--save_path saved_checkpoints/model-cnn-1 \
+	--save_path saved_checkpoints/model-cnn-2 \
 	--epochs 35 \
 	--loss_margin 0.1 \
 	--dev_every 600 \

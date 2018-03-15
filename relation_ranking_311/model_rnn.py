@@ -96,14 +96,15 @@ class RelationRanking(nn.Module):
         seq_encode = self.seq_out(seq_att)
 
         # `score` - (batch, 1) or (neg_size * batch, 1)
- #       score = self.bilinear(seq_encode, rel_embed)
-#        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
+#        score = self.bilinear(seq_encode, rel_embed)
+        score = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
 
+        '''
         dot = torch.sum(seq_encode * rel_embed, 1, keepdim=True)
         dis = seq_encode - rel_embed
         euclidean = torch.sqrt(torch.sum(dis * dis, 1, keepdim=True))
         score = (1/(1+euclidean)) * (1/1+torch.exp(-(dot+1)))
-
+        '''
 
         if pos:  # pos要把结果扩展
             score = score.squeeze(1).unsqueeze(0).expand(neg_size, batch_size)
@@ -113,7 +114,7 @@ class RelationRanking(nn.Module):
 
     def forward(self, batch):
         # shape of seqs (batch size, sequence length)
-        seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2 = batch
+        seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2, pos_rel, pos_len, neg_rel, neg_len = batch
 #        print('seqs:', seqs)
         # shape (batch_size, sequence length, dimension of embedding)
         inputs = self.word_embed.forward(seqs)

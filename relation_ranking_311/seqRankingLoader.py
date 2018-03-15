@@ -128,7 +128,7 @@ class SeqRankingLoader():
             indices = range(self.batch_num)
         for i in indices:
             yield Variable(self.seqs[i]), self.seq_len[i], Variable(self.pos_rel1[i]), \
-            Variable(self.pos_rel2[i]), Variable(self.neg_rel1[i]), Variable(self.neg_rel2[i]),\
+            Variable(self.pos_rel2[i]), Variable(self.neg_rel1[i]), Variable(self.neg_rel2[i]), \
             Variable(self.pos_rel[i]), self.pos_rel_len[i], Variable(self.neg_rel[i]),\
             self.neg_rel_len[i]
 
@@ -175,7 +175,7 @@ class CandidateRankingLoader():
 
             neg_rel1 = torch.LongTensor(len(data.cand_rel))
             neg_rel2 = torch.LongTensor(len(data.cand_rel))
-            neg_rel = torch.LongTensor(len(data.cand_rel), args.rel_maxlen)
+            neg_rel = torch.LongTensor(len(data.cand_rel), args.rel_maxlen).fill_(self.pad_index)
             neg_len = torch.LongTensor(len(data.cand_rel))
             for idx, rel in enumerate(data.cand_rel):
                 neg1, neg2, neg = self.get_separated_rel_id(rel)
