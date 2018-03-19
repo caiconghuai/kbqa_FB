@@ -12,7 +12,7 @@ def get_args():
     parser.add_argument('--dropout_prob', type=float, default=0.3)
     parser.add_argument('--word_normalize', action='store_true')
     parser.add_argument('--train_embed', action='store_false', dest='fix_emb') # fine-tune the word embeddings
-    parser.add_argument('--neg_size', type=int, default=50, help='negtive sampling number')
+    parser.add_argument('--neg_size', type=int, default=100, help='negtive sampling number')
     parser.add_argument('--loss_margin', type=float, default=1)
 
     parser.add_argument('--rnn_type', type=str, default='lstm') # or use 'gru'

@@ -22,6 +22,7 @@ class RelationRanking(nn.Module):
         self.word_embed = Embeddings(word_vec_size=config.d_word_embed, dicts=word_vocab)
 
         self.conv = nn.Sequential(
+            nn.Dropout(p=config.dropout_prob),
             nn.Conv2d(1, config.channel_size, (config.conv_kernel_1, config.conv_kernel_2), stride=1,
                       padding=(config.conv_kernel_1//2, config.conv_kernel_2//2)), #channel_in=1, channel_out=8, kernel_size=3*3
             nn.ReLU(True))
@@ -55,11 +56,12 @@ class RelationRanking(nn.Module):
 
         rel_trans = torch.transpose(rel, 1, 2)
         # (batch, 1, seq_len, rel_len)
-#        cross = torch.bmm(seq, rel_trans).unsqueeze(1)
+ #       cross = torch.bmm(seq, rel_trans).unsqueeze(1)
         # 将内积改为cos 相似度
         seq_norm = torch.sqrt(torch.sum(seq*seq, dim=2, keepdim=True))
         rel_norm = torch.sqrt(torch.sum(rel_trans*rel_trans, dim=1, keepdim=True))
         cross = torch.bmm(seq/seq_norm, rel_trans/rel_norm).unsqueeze(1)
+
 #        print('cross: ', cross.size())
 #        print(cross.squeeze(1).squeeze(0))
 

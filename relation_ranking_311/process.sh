@@ -1,5 +1,5 @@
 python train.py \
-	--save_path saved_checkpoints/model-merge-loss1 \
+	--save_path saved_checkpoints/model-50/merge_concat-pool1line-2sides \
 	--epochs 35 \
 	--loss_margin 1 \
 	--dev_every 600 \
@@ -9,8 +9,10 @@ python train.py \
 	--channel_size 8 \
 	--conv_kernel_1 3 \
 	--conv_kernel_2 3 \
-	--pool_kernel_1 3 \
-	--pool_kernel_2 3 \
-	--gpu 2 \
+	--pool_kernel_1 21 \
+	--pool_kernel_2 1 \
+	--gpu 6 \
 	--lr 0.0005 \
+	--train_file data/train.relation_ranking.all-50.pt \
+	--valid_file data/valid.relation_ranking.all-50.pt \
 	--rnn_type gru 

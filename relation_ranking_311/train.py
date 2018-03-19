@@ -12,7 +12,7 @@ import os, sys, glob
 import numpy as np
 
 from args import get_args
-from model import RelationRanking  ###
+from model_315 import RelationRanking  ###
 from seqRankingLoader import SeqRankingLoader
 
 # please set the configuration in the file : args.py
@@ -108,9 +108,11 @@ for epoch in range(1, args.epochs+1):
         model.train();
         optimizer.zero_grad()
 
-        pos_score1, pos_score2, pos_score3, neg_score1, neg_score2, neg_score3 = model(batch)
-        pos_score = pos_score1+pos_score2+neg_score3
-        neg_score = neg_score1+neg_score2+neg_score3
+#        pos_score1, pos_score2, pos_score3, neg_score1, neg_score2, neg_score3 = model(batch)
+#        pos_score = pos_score1+pos_score2+neg_score3
+#        neg_score = neg_score1+neg_score2+neg_score3
+        pos_score, neg_score = model(batch)
+
         n_correct += (torch.sum(torch.gt(pos_score, neg_score), 0).data == neg_score.size(0)).sum()
         n_total += pos_score.size(1)
         train_acc = 100. * n_correct / n_total
@@ -166,10 +168,13 @@ for epoch in range(1, args.epochs+1):
             pred_list = []
 
             for valid_batch_idx, valid_batch in enumerate(valid_loader.next_batch(False)):
-                val_ps1, val_ps2, val_ps3, val_ns1, val_ns2, val_ns3 = model(valid_batch)
-                val_neg_size, val_batch_size = val_ps1.size()
-                n_dev_correct += (torch.sum(torch.gt(val_ps1+val_ps2+val_ps3,
-                                                     val_ns1+val_ns2+val_ns3), 0).data  == val_neg_size).sum()
+#                val_ps1, val_ps2, val_ps3, val_ns1, val_ns2, val_ns3 = model(valid_batch)
+#                val_ps = val_ps1 + val_ps2 + val_ps3
+#                val_ns = val_ns1 + val_ns2 + val_ns3
+                val_ps, val_ns = model(valid_batch)
+                val_neg_size, val_batch_size = val_ps.size()
+
+                n_dev_correct += (torch.sum(torch.gt(val_ps, val_ns), 0).data  == val_neg_size).sum()
                 valid_total += val_batch_size
 
             dev_acc = 100. * n_dev_correct / valid_total

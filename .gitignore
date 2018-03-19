@@ -108,3 +108,5 @@ ENV/
 *.tgz
 *.lua
 *.swp
+saved_checkpoints/
+others/

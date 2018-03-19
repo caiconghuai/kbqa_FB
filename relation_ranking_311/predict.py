@@ -50,9 +50,10 @@ def evaluate(dataset = args.test_file, tp = 'test'):
 
     for data_batch_idx, data_batch in enumerate(data_loader.next_batch(shuffle=False)):
 #        if data_batch_idx > 1:break
-        pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch)
+        pos_score1, pos_score2, pos_score3, neg_score1, neg_score2, neg_score3 = model(data_batch)
         neg_size, batch_size = pos_score1.size()
-        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2, neg_score1+neg_score2), 0).data ==
+        n_correct += (torch.sum(torch.gt(pos_score1+pos_score2+pos_score3,
+                                         neg_score1+neg_score2+neg_score3), 0).data ==
                       neg_size).sum()
 
         '''
@@ -112,10 +113,11 @@ def predict(qa_pattern_file, tp):
     if args.write_res:
         results_file = open(os.path.join(args.results_path, '%s-pred_rel-wrong.txt' %tp), 'w')
         results_all_file = open(os.path.join(args.results_path, '%s-results-all.txt' %tp), 'w')
-    pred_rel_file = open(os.path.join(args.results_path, '%s-rel_results.txt' %tp), 'w')
+#    pred_rel_file = open(os.path.join(args.results_path, '%s-rel_results.txt' %tp), 'w')
 
     model.eval()
     total = 0
+    sub_correct = 0
     rel_scores = []
     n_correct = 0
     n_rel_correct = 0
@@ -123,14 +125,19 @@ def predict(qa_pattern_file, tp):
     n_single_correct = 0
     for data_batch in data_loader.next_question():
         data = data_batch[-1]
-        if data.subject not in data.cand_sub: # cand_sub错的就不用管了
-            continue
         total += 1
+        if data.subject not in data.cand_sub:
+            continue
+        sub_correct += 1
 
-        pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch[:-1])
-        neg_score = (neg_score1+neg_score2).data.squeeze().cpu().numpy()
- #       pos_score, neg_score = model(data_batch[:-1])
- #       neg_score = neg_score.data.squeeze().cpu().numpy()
+ #       pos_score1, pos_score2, neg_score1, neg_score2 = model(data_batch[:-1])
+ #       neg_score = (neg_score1+neg_score2).data.squeeze().cpu().numpy()
+
+ #       pos_score1, pos_score2, pos_score3, neg_score1, neg_score2, neg_score3 = model(data_batch[:-1])
+ #       neg_score = (neg_score1+neg_score2+neg_score3).data.squeeze().cpu().numpy()
+
+        pos_score, neg_score = model(data_batch[:-1])
+        neg_score = neg_score.data.squeeze().cpu().numpy()
 
         if args.write_score:
             rel_scores.append((data.cand_rel, data.relation, neg_score))
@@ -139,7 +146,7 @@ def predict(qa_pattern_file, tp):
         pred_rel, pred_rel_scores, pred_sub = rel_pruned(neg_score, data)
 
         if pred_rel == data.relation:
-            pred_rel_file.write('1\n')
+#            pred_rel_file.write('1\n')
             n_rel_correct += 1
             if data.subject in pred_sub:
                 n_sub_recall += 1
@@ -147,8 +154,8 @@ def predict(qa_pattern_file, tp):
                     n_correct += 1
                     if len(pred_sub) == 1:
                         n_single_correct += 1  # sub和rel都预测正确且唯一的个数
-        else:
-            pred_rel_file.write('0\n')
+#        else:
+#            pred_rel_file.write('0\n')
         '''
         elif args.write_res:
             results_file.write('%s\n' %(data.question))
@@ -165,13 +172,13 @@ def predict(qa_pattern_file, tp):
         pickle.dump(rel_scores, score_file)
 
     accuracy = 100. * n_correct / total
-    rel_acc = 100. * n_rel_correct / total
-    sub_recall = 100. * n_sub_recall / total
-    single_acc = 100. * n_single_correct / total
+    rel_acc = 100. * n_rel_correct / sub_correct
+    sub_recall = 100. * n_sub_recall / sub_correct
+    single_acc = 100. * n_single_correct / sub_correct
     print("%s\taccuracy: %8.6f\tcorrect: %d\ttotal: %d" %(tp, accuracy, n_correct, total))
-    print('rel_acc: ', rel_acc, n_rel_correct)
-    print('recall: ', sub_recall, n_sub_recall)
-    print('single_acc: ', single_acc, n_single_correct)
+    print('rel_acc: ', rel_acc, n_rel_correct, sub_correct)
+    print('recall: ', sub_recall, n_sub_recall, sub_correct)
+    print('single_acc: ', single_acc, n_single_correct, sub_correct)
     print("-" * 80)
 
 if args.predict:

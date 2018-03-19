@@ -66,12 +66,23 @@ class RelationRanking(nn.Module):
         self.pooling = nn.MaxPool2d((config.pool_kernel_1, config.pool_kernel_2),
                                     stride=(config.pool_kernel_1, config.pool_kernel_2), padding=0)
 
+        self.pooling2 = nn.MaxPool2d((1, config.rel_maxlen),
+                                    stride=(1, config.rel_maxlen), padding=0)
+
         self.fc = nn.Sequential(
             nn.Linear(p_size1*p_size2*config.channel_size, 20),
             nn.ReLU(),
             nn.Dropout(p=config.dropout_prob),
-            nn.Linear(20, 1),
-            nn.Sigmoid())
+            nn.Linear(20, 1))
+
+        self.fc1 = nn.Sequential(
+            nn.Linear(config.seq_maxlen * config.channel_size, 20),
+            nn.ReLU(),
+            nn.Dropout(p=config.dropout_prob),
+            nn.Linear(20,1))
+
+        self.fc2 = nn.Sequential(
+            nn.Linear(4, 1))
 
 
     def question_encoder(self, inputs):
@@ -129,9 +140,9 @@ class RelationRanking(nn.Module):
         '''
 
         if pos:  # pos要把结果扩展
-            score = score.squeeze(1).unsqueeze(0).expand(neg_size, batch_size)
+            score = score.unsqueeze(0).expand(neg_size, batch_size, 1)
         else:
-            score = score.view(neg_size, batch_size)
+            score = score.view(neg_size, batch_size, 1)
         return score
 
     def matchPyramid(self, seq, rel, seq_len, rel_len):
@@ -180,7 +191,11 @@ class RelationRanking(nn.Module):
 
         # (batch, 1)
         out = self.fc(pool1)
-        return out
+
+        pool2 = self.pooling2(conv1_expand).view(batch_size, -1)
+        out2 = self.fc1(pool2)
+
+        return out, out2
 
     def dynamic_pooling_index(self, len1, len2, max_len1, max_len2):
         def dpool_index_(batch_idx, len1_one, len2_one, max_len1, max_len2):
@@ -227,7 +242,7 @@ class RelationRanking(nn.Module):
         neg_rel2_embed = self.dropout(neg_rel2_embed)
 
         neg_size, batch, neg_len = neg_rel.size()
-        # shape of `score` - (neg_size, batch_size)
+        # shape of `score` - (neg_size, batch_size, 1)
         pos_score1 = self.cal_score(outputs, seq_len, pos_rel1_embed, neg_size)
         pos_score2 = self.cal_score(outputs, seq_len, pos_rel2_embed, neg_size)
         neg_score1 = self.cal_score(outputs, seq_len, neg_rel1_embed)
@@ -235,10 +250,11 @@ class RelationRanking(nn.Module):
 
         # (batch, len, emb_size)
         pos_embed = self.word_embed.forward(pos_rel)
-        # (batch, 1)
-        pos_score3 = self.matchPyramid(inputs, pos_embed, seq_len, pos_rel_len)
-        # (neg_size, batch)
-        pos_score3 = pos_score3.squeeze(-1).unsqueeze(0).expand(neg_size, batch)
+        # (batch, 20)
+        pos_score3, pos_score4 = self.matchPyramid(inputs, pos_embed, seq_len, pos_rel_len)
+        # (neg_size, batch, 20)
+        pos_score3 = pos_score3.unsqueeze(0).expand(neg_size, batch, pos_score3.size(1))
+        pos_score4 = pos_score4.unsqueeze(0).expand(neg_size, batch, pos_score4.size(1))
 
         # (neg_size*batch, len, emb_size)
         neg_embed = self.word_embed.forward(neg_rel.view(-1, neg_len))
@@ -247,9 +263,15 @@ class RelationRanking(nn.Module):
         # (neg_size*batch,)
         neg_rel_len = neg_rel_len.view(-1)
         seq_len = seq_len.unsqueeze(0).expand(neg_size, batch).contiguous().view(-1)
-        # (neg_size*batch, 1)
-        neg_score3 = self.matchPyramid(seqs_embed, neg_embed, seq_len, neg_rel_len)
-        # (neg_size, batch)
-        neg_score3 = neg_score3.squeeze(-1).view(neg_size, batch)
+        # (neg_size*batch, 20)
+        neg_score3, neg_score4 = self.matchPyramid(seqs_embed, neg_embed, seq_len, neg_rel_len)
+        # (neg_size, batch, 20)
+        neg_score3 = neg_score3.view(neg_size, batch, neg_score3.size(1))
+        neg_score4 = neg_score4.view(neg_size, batch, neg_score4.size(1))
 
-        return pos_score1+pos_score2+pos_score3, neg_score1+neg_score2+neg_score3
+        pos_concat = torch.cat((pos_score1, pos_score2, pos_score3, pos_score4), 2)
+        neg_concat = torch.cat((neg_score1, neg_score2, neg_score3, neg_score4), 2)
+        pos_score = self.fc2(pos_concat).squeeze(-1)
+        neg_score = self.fc2(neg_concat).squeeze(-1)
+
+        return pos_score, neg_score
