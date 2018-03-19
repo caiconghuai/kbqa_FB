@@ -6,6 +6,8 @@ import pickle
 
 from args import get_args
 from seqRankingLoader import *
+sys.path.append('../others')
+#from creat_test_data import *
 sys.path.append('../tools')
 import virtuoso
 
@@ -183,6 +185,7 @@ def predict(qa_pattern_file, tp):
 
 if args.predict:
     qa_pattern_file = '../entity_detection/results-5/QAData.label.%s.pkl'
+ #   qa_pattern_file = '../others/%s.replace_ne.withpool'
     for tp in ('valid', 'test', 'train'):
         predict(qa_pattern_file % tp, tp)
 else:

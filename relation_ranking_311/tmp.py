@@ -6,7 +6,9 @@
 # Created Time: 2017-11-09
 import sys
 import torch
-from seqRankingLoader import *
+#from seqRankingLoader import *
+sys.path.append('../others')
+from creat_test_data import *
 import numpy as np
 sys.path.append('../vocab')
 
@@ -47,7 +49,8 @@ for i, batch in enumerate(loader.next_batch(False)):
 #        print(neg_rel_trans[j])
 '''
 
-loader = CandidateRankingLoader('../entity_detection/results-5/QAData.label.valid.pkl', word_vocab, rel_vocab, 0)
+#loader = CandidateRankingLoader('../entity_detection/results-5/QAData.label.valid.pkl', word_vocab, rel_vocab, 0)
+loader = CandidateRankingLoader('../others/valid.replace_ne.withpool', word_vocab, rel_vocab, 0)
 for i, batch in enumerate(loader.next_question()):
     if i > 10:break
     seqs, seq_len, pos_rel1, pos_rel2, neg_rel1, neg_rel2, pos_rel, pos_len, neg_rel, neg_len, data = batch
