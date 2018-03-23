@@ -1,19 +1,19 @@
 python train.py \
-	--save_path saved_checkpoints/model-50/merge_concat-pool1line-2sides-3 \
+	--save_path saved_checkpoints/model-50/merge_concat-pool1line-2sides-2 \
 	--epochs 30 \
-	--loss_margin 0.75 \
+	--loss_margin 1 \
 	--dropout_prob 0.3 \
 	--dev_every 600 \
-	--d_rel_embed 158 \
-    	--d_hidden 186 \
+	--d_rel_embed 256 \
+    	--d_hidden 128 \
 	--n_layers 2 \
-	--channel_size 10 \
-	--conv_kernel_1 1 \
-	--conv_kernel_2 1 \
+	--channel_size 8 \
+	--conv_kernel_1 3 \
+	--conv_kernel_2 3 \
 	--pool_kernel_1 21 \
 	--pool_kernel_2 1 \
 	--gpu 6 \
-	--lr 0.0008851338189553926 \
+	--lr 0.0005 \
 	--train_file data/train.relation_ranking.all-50.pt \
 	--valid_file data/valid.relation_ranking.all-50.pt \
 	--rnn_type gru 

@@ -5,9 +5,9 @@ import torch
 import pickle
 
 from args import get_args
-from seqRankingLoader import *
+#from seqRankingLoader import *
 sys.path.append('../others')
-#from creat_test_data import *
+from creat_test_data import *
 sys.path.append('../tools')
 import virtuoso
 
@@ -104,7 +104,8 @@ def rel_pruned(neg_score, data):
     pred_sub = []
     for i, rels in enumerate(data.sub_rels):
         if pred_rel in rels:
-            pred_sub.append(data.cand_sub[i])
+            pred_sub.append((data.cand_sub[i], len(rels)))
+    pred_sub = [sub[0] for sub in sorted(pred_sub, key = lambda sub:sub[1], reverse=True)]
     return pred_rel, pred_rel_scores, pred_sub
 
 
@@ -184,8 +185,8 @@ def predict(qa_pattern_file, tp):
     print("-" * 80)
 
 if args.predict:
-    qa_pattern_file = '../entity_detection/results-5/QAData.label.%s.pkl'
- #   qa_pattern_file = '../others/%s.replace_ne.withpool'
+ #   qa_pattern_file = '../entity_detection/results-5/QAData.label.%s.pkl'
+    qa_pattern_file = '../others/%s.replace_ne.withpool'
     for tp in ('valid', 'test', 'train'):
         predict(qa_pattern_file % tp, tp)
 else:
