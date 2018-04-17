@@ -123,8 +123,8 @@ class RelationRanking(nn.Module):
         # `weight` - (batch, length)
  #       seq_att, weight = self.question_attention.forward(rel_embed, outputs, seqs_len)
         seq_att, weight = self.question_attention.forward(rel_embed, outputs)
- #       if pos:
- #           print('weight:', weight)
+#        if pos:
+#            print('weight:', weight.cpu().data.numpy())
  #       seq_encode = self.dropout(seq_att)
         seq_encode = self.seq_out(seq_att)
 
